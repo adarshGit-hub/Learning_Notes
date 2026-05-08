@@ -1,116 +1,142 @@
-# GraphQL Notes
+# GraphQL (Facebook) (2015)
 
+Tool: Apollo GraphQL
+
+---
 
 ## Table of Contents
-
-- [What is GraphQL?](#what-is-graphql)
-- [GraphQL vs REST](#graphql-vs-rest)
-- [Schema Development](#schema-development)
-- [Querying and Mutating Data](#querying-and-mutating-data)
-- [Developer Benefits](#developer-benefits)
+- [Before: REST API](#before-rest-api)
+  - [2 Problems](#2-problems)
+    - [1. Overfetching](#1-overfetching)
+    - [2. Underfetching](#2-underfetching)
+- [Core Concepts of GQL](#core-concepts-of-gql)
+  - [1) Schema](#1-schema)
+  - [2) Query](#2-query)
+  - [3) Resolver](#3-resolver)
+  - [4) Mutation](#4-mutation)
+  - [5) Subscription](#5-subscription)
+- [Flow](#flow)
+- [RestAPI](#restapi)
+  - [Developer Benefits](#developer-benefits)
 - [Summary](#summary)
 
 ---
 
-## What is GraphQL?
+## Before: REST API
 
-GraphQL is a **query language for APIs** that provides:
+### 2 Problems
 
-- A **type system** to describe your data schemas.
-- The ability for front-end consumers to **request exactly the data they need** — no more, no less.
+#### 1. Overfetching
 
+* really want username
+* but got user obj.
 
----
+For much data → slow
 
-## GraphQL vs REST
+#### 2. Underfetching
 
-| Feature | REST | GraphQL |
-|---|---|---|
-| Endpoints | Multiple URLs per resource | Single entry point |
-| Data Fetching | Can lead to over-fetching or under-fetching | Returns exactly what was requested |
-| Response Shape | Fixed by the server | Mirrors the structure of the query |
+* want user + its posts + comments
+* but need 3 API hits for this.
 
-### Key Problems with REST
+[Null problem]
 
-- **Under-fetching**: One endpoint doesn't return enough data, forcing multiple requests.
-- **Over-fetching**: An endpoint returns more data than the client actually needs.
-
-### How GraphQL Solves This
-
-GraphQL uses a **single entry point** and returns data in a structure that **mirrors the request**, giving the client full control over the shape of the response.
-
+Too many trips.
 
 ---
 
-## Schema Development
+## Core Concepts of GQL
 
-Developers define the API structure using a **schema**:
+### 1) Schema
 
-- Custom objects are defined using the `type` keyword.
-- Each type has **specific fields** with defined data types.
-- **Relationships between types** are also defined within the schema, enabling connected data fetching.
+* contract b/w client and server.
+* define every type of data that exists.
+* blueprint.
 
-### Example
+### 2) Query
 
-```graphql
-type User {
-  id: ID!
-  name: String!
-  email: String!
-  posts: [Post]
-}
+* how client reads data.
+* server responds in the shape.
 
-type Post {
-  id: ID!
-  title: String!
-  author: User
-}
-```
-
-
----
-
-## Querying and Mutating Data
-
-Every GraphQL API includes two core operation types:
-
-### `query` — Reading Data
-
-Used to **fetch** data from the API.
+Example:
 
 ```graphql
 query {
-  user(id: "1") {
-    name
-    email
-  }
-}
-```
-
-### `mutation` — Modifying Data
-
-Used to **create, update, or delete** data.
-
-```graphql
-mutation {
-  createUser(name: "Alice", email: "alice@example.com") {
+  user(id: "42") {
     id
     name
   }
 }
 ```
 
-![alt text](image.png)
+### 3) Resolver
+
+* function that fetches data for any specific field.
+
+Example:
+
+```graphql
+const resolver = {
+  Query: {
+    user: (_, { id }) =>
+      db.users.findById(id)
+  },
+
+  User: {
+    posts: (user) =>
+      db.posts.find(user.id)
+  }
+}
+```
+
+### 4) Mutation
+
+* how you write data → create, update, delete.
+* like query, but changing data on db.
+
+### 5) Subscription
+
+* client subscribe to an event.
+* like websocket but in GQL.
+
 ---
 
-## Developer Benefits
+## Flow
+
+```text
+Client
+(send query)
+(HTTP POST)
+        ↓
+Parse
+(query string → AST)
+        ↓
+Validate
+(schema check)
+        ↓
+Execute (Resolvers)
+        ↓
+Data layer
+(DB, RestAPI, Cache...)
+        ↓
+Response
+(JSON with data)
+```
+
+---
+
+## RestAPI
+
+* Representational State Transfer
+* bridge b/w client & server.
+* uses HTTP methods → to perform CRUD operations.
+
+### Developer Benefits
 
 Because the schema is explicitly defined upfront:
 
 - **Tooling can provide autocompletion** for writing queries (e.g., in GraphiQL, Insomnia, Postman).
 - The API is **self-documenting** — developers can explore available types and fields directly.
 - It's easier to **discover and consume** the API without extensive external documentation.
-
 
 ---
 
@@ -128,3 +154,4 @@ Because the schema is explicitly defined upfront:
 ---
 
 *Notes taken from a GraphQL introductory video.*
+
