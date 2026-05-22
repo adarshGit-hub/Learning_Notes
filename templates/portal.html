@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Developer Learning Wiki</title>
+  <link rel="stylesheet" href="{{THEME_CSS}}">
+</head>
+<body>
+
+  <!-- Decorative mesh backgrounds -->
+  <div class="bg-grid-mesh">
+    <div class="bg-mesh-1"></div>
+    <div class="bg-mesh-2"></div>
+  </div>
+
+  <div class="portal-container">
+    <header class="portal-hero fade-in">
+      <div class="portal-hero-tag">🧠 Personal Knowledge Base</div>
+      <h1>Developer <span>Learning Notes</span></h1>
+      <p>A beautifully cataloged collection of technical references, API guides, concepts, and system architectures.</p>
+      
+      <!-- Theme Switcher floating top right -->
+      <div style="position: absolute; top: -3rem; right: 0;">
+        <button class="theme-switch-btn" id="theme-toggle" style="width: 130px;">
+          <span id="theme-btn-icon">🌙</span> <span id="theme-btn-text">Dark Mode</span>
+        </button>
+      </div>
+
+      <!-- Realtime Search Box -->
+      <div class="portal-search-box">
+        <input type="text" id="search-input" placeholder="Search across tags, titles, and note content..." autofocus>
+      </div>
+    </header>
+
+    <!-- Filters -->
+    <div class="portal-filters fade-in">
+      <button class="filter-btn active" data-filter="all">All Notes</button>
+      {{NOTE_TABS}}
+    </div>
+
+    <!-- Notes Grid -->
+    <main class="portal-grid fade-in" id="notes-grid">
+      {{NOTE_CARDS}}
+    </main>
+
+    <!-- Footer -->
+    <footer class="portal-footer">
+      <p>Generated with ⚡ Antigravity Wiki Automator · Hosted on GitHub Pages · Custom Domain Enabled</p>
+    </footer>
+  </div>
+
+  <!-- Dynamic Search & Filtering Script -->
+  <script>
+    // Theme Switcher Logic
+    const themeToggleBtn = document.getElementById('theme-toggle');
+    const themeBtnIcon = document.getElementById('theme-btn-icon');
+    const themeBtnText = document.getElementById('theme-btn-text');
+    
+    function setTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('theme', theme);
+      if (theme === 'dark') {
+        themeBtnIcon.textContent = '☀️';
+        themeBtnText.textContent = 'Light Mode';
+      } else {
+        themeBtnIcon.textContent = '🌙';
+        themeBtnText.textContent = 'Dark Mode';
+      }
+    }
+    
+    // Initialize Theme
+    const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    setTheme(savedTheme);
+    
+    themeToggleBtn.addEventListener('click', () => {
+      const currentTheme = document.documentElement.getAttribute('data-theme');
+      setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+    });
+
+    // Notes Data for search indexing
+    const notes = {{NOTE_JSON}};
+
+    const searchInput = document.getElementById('search-input');
+    const filterBtns = document.querySelectorAll('.filter-btn');
+    const notesGrid = document.getElementById('notes-grid');
+    
+    let activeFilter = 'all';
+    let searchQuery = '';
+
+    // Search and filter function
+    function updateGrid() {
+      const query = searchQuery.toLowerCase().trim();
+      
+      const cards = notesGrid.querySelectorAll('.note-card');
+      let visibleCount = 0;
+
+      cards.forEach(card => {
+        const id = card.getAttribute('data-id');
+        const note = notes.find(n => n.id === id);
+        
+        if (!note) return;
+
+        // Check category filter
+        const matchesCategory = activeFilter === 'all' || note.category === activeFilter;
+        
+        // Check search query matches title, description, category, or content
+        const matchesSearch = !query || 
+          note.title.toLowerCase().includes(query) || 
+          note.description.toLowerCase().includes(query) || 
+          note.category.toLowerCase().includes(query) ||
+          note.tags.some(t => t.toLowerCase().includes(query));
+
+        if (matchesCategory && matchesSearch) {
+          card.style.display = 'flex';
+          card.style.animation = 'fadeIn 0.3s ease forwards';
+          visibleCount++;
+        } else {
+          card.style.display = 'none';
+        }
+      });
+
+      // Handle Empty State
+      let emptyState = document.getElementById('empty-state');
+      if (visibleCount === 0) {
+        if (!emptyState) {
+          emptyState = document.createElement('div');
+          emptyState.id = 'empty-state';
+          emptyState.style.gridColumn = '1 / -1';
+          emptyState.style.textAlign = 'center';
+          emptyState.style.padding = '4rem 2rem';
+          emptyState.style.color = 'var(--text-secondary)';
+          emptyState.innerHTML = `
+            <div style="font-size: 3rem; margin-bottom: 1rem;">🔍</div>
+            <h3>No learning notes match your search</h3>
+            <p style="margin-top: 0.5rem; font-size: 0.9rem;">Try checking your spelling or selecting another filter category.</p>
+          `;
+          notesGrid.appendChild(emptyState);
+        }
+      } else if (emptyState) {
+        emptyState.remove();
+      }
+    }
+
+    // Input listener
+    searchInput.addEventListener('input', (e) => {
+      searchQuery = e.target.value;
+      updateGrid();
+    });
+
+    // Filter listener
+    filterBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        filterBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeFilter = btn.getAttribute('data-filter');
+        updateGrid();
+      });
+    });
+  </script>
+</body>
+</html>

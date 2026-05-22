@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shopify API Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f7f6f2;
+    --surface: #ffffff;
+    --surface-2: #f0efe9;
+    --border: #e4e2da;
+    --text: #1a1a18;
+    --text-2: #6b6b63;
+    --text-3: #9b9b91;
+    --green: #1D9E75; --green-light: #E1F5EE; --green-dark: #085041;
+    --blue: #378ADD; --blue-light: #E6F1FB; --blue-dark: #0C447C;
+    --amber: #BA7517; --amber-light: #FAEEDA; --amber-dark: #633806;
+    --coral: #D85A30; --coral-light: #FAECE7; --coral-dark: #4A1B0C;
+    --purple: #7F77DD; --purple-light: #EEEDFE; --purple-dark: #3C3489;
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 0;
+    min-height: 100vh;
+  }
+
+  /* Layout */
+  .shell { display: flex; min-height: 100vh; }
+
+  /* Sidebar */
+  .sidebar {
+    width: 240px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    overflow-y: auto;
+    padding: 2rem 0;
+    z-index: 10;
+  }
+  .sidebar-logo {
+    display: flex; align-items: center; gap: 10px;
+    padding: 0 1.5rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1.5rem;
+  }
+  .logo-icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: #96bf48;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .logo-icon svg { width: 18px; height: 18px; fill: white; }
+  .logo-text { font-size: 14px; font-weight: 600; color: var(--text); line-height: 1.2; }
+  .logo-sub { font-size: 11px; color: var(--text-3); font-weight: 400; }
+
+  .nav-section { padding: 0 1rem; margin-bottom: 0.5rem; }
+  .nav-label { font-size: 10px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.1em; padding: 0 0.5rem; margin-bottom: 4px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 10px; border-radius: var(--radius-sm);
+    font-size: 13px; color: var(--text-2);
+    text-decoration: none; cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    border: none; background: none; width: 100%; text-align: left;
+  }
+  .nav-item:hover { background: var(--surface-2); color: var(--text); }
+  .nav-item.active { background: var(--green-light); color: var(--green-dark); font-weight: 500; }
+  .nav-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: 0.5; flex-shrink: 0; }
+
+  /* Main content */
+  .main { margin-left: 240px; flex: 1; padding: 3rem 2rem; max-width: 860px; }
+
+  /* Hero */
+  .hero {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 2.5rem;
+    margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle at top right, #e8f5e0 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 11px; font-weight: 600; color: var(--green-dark);
+    background: var(--green-light); padding: 3px 10px;
+    border-radius: 20px; margin-bottom: 1rem;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .hero h1 { font-size: 32px; font-weight: 600; letter-spacing: -0.5px; margin-bottom: 0.5rem; line-height: 1.2; }
+  .hero p { font-size: 15px; color: var(--text-2); max-width: 520px; line-height: 1.7; margin-bottom: 1.5rem; }
+  .badge-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .badge {
+    font-size: 11px; font-weight: 500; padding: 4px 10px;
+    border-radius: 20px; border: 1px solid;
+  }
+  .badge-green { background: var(--green-light); color: var(--green-dark); border-color: #5DCAA5; }
+  .badge-amber { background: var(--amber-light); color: var(--amber-dark); border-color: #EF9F27; }
+  .badge-purple { background: var(--purple-light); color: var(--purple-dark); border-color: #AFA9EC; }
+  .badge-blue { background: var(--blue-light); color: var(--blue-dark); border-color: #85B7EB; }
+  .badge-coral { background: var(--coral-light); color: var(--coral-dark); border-color: #F0997B; }
+
+  /* Sections */
+  .section { margin-bottom: 3rem; }
+  .section-header {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-icon {
+    width: 32px; height: 32px; border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+  .icon-green { background: var(--green-light); color: var(--green); }
+  .icon-blue { background: var(--blue-light); color: var(--blue); }
+  .icon-amber { background: var(--amber-light); color: var(--amber); }
+  .icon-purple { background: var(--purple-light); color: var(--purple); }
+  .icon-coral { background: var(--coral-light); color: var(--coral); }
+
+  h2 { font-size: 20px; font-weight: 600; color: var(--text); letter-spacing: -0.3px; }
+  h3 { font-size: 15px; font-weight: 600; color: var(--text); margin: 1.5rem 0 0.75rem; }
+  p { font-size: 14px; color: var(--text-2); line-height: 1.75; margin-bottom: 0.75rem; }
+
+  /* API Cards */
+  .api-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1.5rem; }
+  .api-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1.1rem 1.25rem;
+    transition: box-shadow 0.15s;
+  }
+  .api-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.07); }
+  .api-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+  .api-card-name { font-size: 14px; font-weight: 600; color: var(--text); }
+  .api-card-desc { font-size: 13px; color: var(--text-2); line-height: 1.6; }
+  .tag { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px; white-space: nowrap; }
+  .tag-green { background: var(--green-light); color: var(--green-dark); }
+  .tag-amber { background: var(--amber-light); color: var(--amber-dark); }
+  .tag-purple { background: var(--purple-light); color: var(--purple-dark); }
+  .tag-blue { background: var(--blue-light); color: var(--blue-dark); }
+
+  /* Tables */
+  .table-wrap { border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; margin: 1rem 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    background: var(--surface-2); padding: 10px 14px;
+    text-align: left; font-size: 11px; font-weight: 600;
+    color: var(--text-3); text-transform: uppercase; letter-spacing: 0.07em;
+    border-bottom: 1px solid var(--border);
+  }
+  tbody td { padding: 10px 14px; border-bottom: 1px solid var(--border); color: var(--text); }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: var(--surface-2); }
+  .plan { font-weight: 500; }
+  .num-cell { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--green-dark); font-weight: 500; }
+
+  /* Code block */
+  .code-block {
+    background: #1e1e1e;
+    border-radius: var(--radius-md);
+    padding: 1.25rem 1.5rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 12.5px;
+    line-height: 1.8;
+    overflow-x: auto;
+    margin: 1rem 0;
+    color: #d4d4d4;
+  }
+  .ck { color: #9cdcfe; }
+  .cv { color: #4ec9b0; }
+  .cn { color: #b5cea8; }
+  .cc { color: #6a9955; font-style: italic; }
+
+  /* Callouts */
+  .callout {
+    border-left: 3px solid;
+    padding: 12px 16px;
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    margin: 1rem 0;
+    font-size: 13.5px;
+    line-height: 1.65;
+    color: var(--text);
+  }
+  .callout strong { font-weight: 600; }
+  .callout-green { background: var(--green-light); border-color: var(--green); color: var(--green-dark); }
+  .callout-amber { background: var(--amber-light); border-color: var(--amber); color: var(--amber-dark); }
+  .callout-blue { background: var(--blue-light); border-color: var(--blue); color: var(--blue-dark); }
+
+  /* Stat pills */
+  .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 1rem 0; }
+  .stat-pill {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1.25rem 1rem;
+    text-align: center;
+  }
+  .stat-num { font-size: 26px; font-weight: 600; color: var(--text); letter-spacing: -0.5px; font-family: 'DM Mono', monospace; }
+  .stat-label { font-size: 12px; color: var(--text-3); margin-top: 4px; line-height: 1.4; }
+
+  /* Decision cards */
+  .decision-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 1rem 0; }
+  .decision-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1.1rem;
+  }
+  .decision-icon { font-size: 22px; margin-bottom: 8px; }
+  .decision-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 5px; }
+  .decision-desc { font-size: 12px; color: var(--text-2); line-height: 1.55; }
+
+  /* Steps */
+  .steps { display: flex; flex-direction: column; gap: 0; margin: 1rem 0; }
+  .step { display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+  .step:last-child { border-bottom: none; }
+  .step-num {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--green-light); color: var(--green-dark);
+    font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 1px;
+  }
+  .step-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+  .step-desc { font-size: 13px; color: var(--text-2); line-height: 1.6; }
+
+  /* Bullet list */
+  .check-list { list-style: none; display: flex; flex-direction: column; gap: 6px; margin: 0.75rem 0; }
+  .check-list li { display: flex; align-items: flex-start; gap: 8px; font-size: 13.5px; color: var(--text-2); line-height: 1.6; }
+  .check-list li::before { content: '→'; color: var(--green); font-weight: 600; flex-shrink: 0; margin-top: 1px; }
+
+  /* Footer */
+  .footer {
+    border-top: 1px solid var(--border);
+    margin-top: 2rem; padding-top: 1.5rem;
+    font-size: 12px; color: var(--text-3);
+  }
+  .resource-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 1rem; }
+  .resource-link {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 13px; color: var(--blue);
+    text-decoration: none; padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    transition: background 0.15s;
+  }
+  .resource-link:hover { background: var(--blue-light); }
+  .resource-link::before { content: '↗'; font-size: 11px; opacity: 0.7; }
+
+  @media (max-width: 700px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; padding: 1.5rem 1rem; }
+    .api-grid, .decision-grid, .stat-row { grid-template-columns: 1fr; }
+    h1 { font-size: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M15.337 23.979l7.216-1.561s-2.604-17.613-2.625-17.73a.333.333 0 00-.312-.267c-.133-.01-2.927-.208-2.927-.208s-1.948-1.927-2.161-2.13v21.896zm-2.37.021L12.8.312S10.927-.03 10.802.014c-.073.027-.427.156-.99.344L8.87 3.615c-.849-.26-1.786-.406-2.802-.406C3.115 3.208.49 5.562.49 8.51c0 3.76 2.916 5.583 5.786 7.364C8.833 17.724 9 17.802 9 18.375c0 .604-.49 1.052-.99 1.052-.99 0-2.036-.979-2.604-1.51l-1.787 3.01S5.396 23 8.063 23c1.99 0 4.094-1.198 4.844-3.51l.06 4.51zm-5.203-12.417c-1.49-.906-2.943-2-2.943-3.073 0-.948.646-1.604 1.823-1.604 1.12 0 2.016.49 2.016.49l.76-2.49s-1.109-.62-2.573-.62c-2.667 0-4.448 1.886-4.448 4.385 0 1.51.76 2.823 1.932 3.885l3.433-1.973z"/></svg>
+      </div>
+      <div>
+        <div class="logo-text">Shopify API</div>
+        <div class="logo-sub">Developer Guide</div>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Overview</div>
+      <a class="nav-item active" href="#apis"><span class="nav-dot"></span> APIs Overview</a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Synchronous</div>
+      <a class="nav-item" href="#graphql"><span class="nav-dot"></span> GraphQL Admin</a>
+      <a class="nav-item" href="#rest"><span class="nav-dot"></span> REST Admin</a>
+      <a class="nav-item" href="#storefront"><span class="nav-dot"></span> Storefront API</a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Asynchronous</div>
+      <a class="nav-item" href="#bulk"><span class="nav-dot"></span> Bulk Operations</a>
+      <a class="nav-item" href="#webhooks"><span class="nav-dot"></span> Webhooks</a>
+      <a class="nav-item" href="#functions"><span class="nav-dot"></span> Shopify Functions</a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Reference</div>
+      <a class="nav-item" href="#limits"><span class="nav-dot"></span> Global Limits</a>
+      <a class="nav-item" href="#choose"><span class="nav-dot"></span> Sync vs Async</a>
+      <a class="nav-item" href="#resources"><span class="nav-dot"></span> Resources</a>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- Hero -->
+    <div class="hero" id="apis">
+      <div class="hero-tag">📦 Developer Reference</div>
+      <h1>Shopify API Guide</h1>
+      <p>Everything you need to understand Shopify's API surfaces — when to use each, how rate limits work, and how to scale from single calls to async bulk operations.</p>
+      <div class="badge-row">
+        <span class="badge badge-green">GraphQL Admin</span>
+        <span class="badge badge-amber">REST Admin</span>
+        <span class="badge badge-purple">Storefront API</span>
+        <span class="badge badge-blue">Bulk Operations</span>
+        <span class="badge badge-coral">Webhooks</span>
+      </div>
+    </div>
+
+    <!-- APIs Overview -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-icon icon-green">🗂️</div>
+        <h2>APIs at a Glance</h2>
+      </div>
+      <p>Shopify exposes several API surfaces. New apps should default to the GraphQL Admin API.</p>
+      <div class="api-grid">
+        <div class="api-card">
+          <div class="api-card-top">
+            <div class="api-card-name">GraphQL Admin API</div>
+            <span class="tag tag-green">Recommended</span>
+          </div>
+          <div class="api-card-desc">Full admin access — products, orders, customers, metafields. Cost-based rate limiting with per-plan point buckets.</div>
+        </div>
+        <div class="api-card">
+          <div class="api-card-top">
+            <div class="api-card-name">REST Admin API</div>
+            <span class="tag tag-amber">Legacy</span>
+          </div>
+          <div class="api-card-desc">Same domain as GraphQL, marked legacy Oct 2024. Only use if you must — migrate new work to GraphQL.</div>
+        </div>
+        <div class="api-card">
+          <div class="api-card-top">
+            <div class="api-card-name">Storefront API</div>
+            <span class="tag tag-purple">Buyer-facing</span>
+          </div>
+          <div class="api-card-desc">GraphQL for buyer-facing storefronts — products, collections, cart, checkout flows. No fixed req/min for real buyer traffic.</div>
+        </div>
+        <div class="api-card">
+          <div class="api-card-top">
+            <div class="api-card-name">Bulk Operations + Webhooks</div>
+            <span class="tag tag-blue">Async</span>
+          </div>
+          <div class="api-card-desc">High-volume async import/export and event-driven notifications from Shopify to your endpoint.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GraphQL -->
+    <div class="section" id="graphql">
+      <div class="section-header">
+        <div class="section-icon icon-green">⚡</div>
+        <h2>GraphQL Admin API</h2>
+      </div>
+      <p>The recommended API for all admin CRUD. Rate limiting uses a <strong>calculated query cost model</strong> — not simple requests-per-second. Each app + store pair gets a bucket that restores over time.</p>
+
+      <h3>Rate limits by plan</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Plan</th><th>Points / sec</th><th>Restore rate</th></tr></thead>
+          <tbody>
+            <tr><td class="plan">Standard</td><td class="num-cell">100</td><td class="num-cell">50 / sec</td></tr>
+            <tr><td class="plan">Advanced Shopify</td><td class="num-cell">200</td><td>—</td></tr>
+            <tr><td class="plan">Shopify Plus</td><td class="num-cell">1,000</td><td>—</td></tr>
+            <tr><td class="plan">Commerce Components</td><td class="num-cell">2,000</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout callout-amber">
+        <strong>Hard cap:</strong> A single query can never exceed <strong>1,000 cost points</strong>, regardless of plan. Input arrays are capped at <strong>250 items</strong> each.
+      </div>
+
+      <h3>Throttle status in every response</h3>
+      <p>Use the <code style="font-family: 'DM Mono', monospace; background: var(--surface-2); padding: 2px 6px; border-radius: 4px; font-size: 12px;">extensions.cost</code> block to implement dynamic backoff — don't guess, read the signal Shopify gives you.</p>
+      <div class="code-block"><span class="cc">// Every GraphQL response includes this</span>
+<span class="ck">"extensions"</span>: {
+  <span class="ck">"cost"</span>: {
+    <span class="ck">"requestedQueryCost"</span>: <span class="cn">101</span>,
+    <span class="ck">"actualQueryCost"</span>:    <span class="cn">46</span>,
+    <span class="ck">"throttleStatus"</span>: {
+      <span class="ck">"maximumAvailable"</span>:  <span class="cn">1000</span>,
+      <span class="ck">"currentlyAvailable"</span>: <span class="cn">954</span>,  <span class="cc">// ← watch this</span>
+      <span class="ck">"restoreRate"</span>:         <span class="cn">50</span>
+    }
+  }
+}</div>
+    </div>
+
+    <!-- REST -->
+    <div class="section" id="rest">
+      <div class="section-header">
+        <div class="section-icon icon-amber">🗄️</div>
+        <h2>REST Admin API <span style="font-size:13px; font-weight:400; color:var(--text-3); margin-left:6px;">Legacy</span></h2>
+      </div>
+      <p>Marked legacy as of October 2024. Uses a <strong>leaky bucket model</strong> based on raw requests-per-second rather than query cost.</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Plan</th><th>Requests / sec</th><th>Bucket size</th></tr></thead>
+          <tbody>
+            <tr><td class="plan">Standard</td><td class="num-cell">2</td><td class="num-cell">40</td></tr>
+            <tr><td class="plan">Advanced Shopify</td><td class="num-cell">4</td><td>—</td></tr>
+            <tr><td class="plan">Shopify Plus</td><td class="num-cell">20</td><td class="num-cell">400</td></tr>
+            <tr><td class="plan">Commerce Components</td><td class="num-cell">40</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout callout-amber">Bucket full → <strong>429 Too Many Requests</strong> with a <code style="font-family:'DM Mono',monospace;">Retry-After</code> header. Always respect it before retrying.</div>
+    </div>
+
+    <!-- Storefront -->
+    <div class="section" id="storefront">
+      <div class="section-header">
+        <div class="section-icon icon-purple">🛍️</div>
+        <h2>Storefront API</h2>
+      </div>
+      <p>Buyer-facing GraphQL API — products, collections, carts, checkout. No fixed requests-per-minute for real buyer traffic.</p>
+      <div class="callout callout-blue">Shopify throttles bots and malicious traffic with <strong>430 Shopify Security Rejection</strong>. Higher limits are available for verified bots via Web Bot Auth.</div>
+    </div>
+
+    <!-- Bulk Operations -->
+    <div class="section" id="bulk">
+      <div class="section-header">
+        <div class="section-icon icon-blue">📦</div>
+        <h2>Bulk Operations</h2>
+      </div>
+      <p>Designed for high-volume reads and writes that would exhaust normal query cost limits. Submit → poll → download. No HTTP connection held open.</p>
+
+      <div class="callout callout-green">
+        <strong>No cost caps:</strong> Bulk operations don't share the single-query 1,000 point limit or standard rate limits. Always use bulk for "export all products/orders" or mass imports.
+      </div>
+
+      <h3>How it works</h3>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div>
+            <div class="step-title">Submit a GraphQL mutation</div>
+            <div class="step-desc">This initial call is subject to normal cost limits. It queues the bulk job on Shopify's side.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div>
+            <div class="step-title">Poll for completion</div>
+            <div class="step-desc">Shopify processes the job asynchronously in the background. Query the operation status periodically.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div>
+            <div class="step-title">Download the result file</div>
+            <div class="step-desc">For queries: download a JSONL file. For imports: check completion status and any errors.</div>
+          </div>
+        </div>
+      </div>
+
+      <h3>Use bulk operations for</h3>
+      <ul class="check-list">
+        <li>Exporting all products, all orders, or all customers</li>
+        <li>Large catalog syncs or platform migrations</li>
+        <li>Any write that would drain your entire rate limit bucket in one go</li>
+      </ul>
+    </div>
+
+    <!-- Webhooks -->
+    <div class="section" id="webhooks">
+      <div class="section-header">
+        <div class="section-icon icon-coral">🔔</div>
+        <h2>Webhooks</h2>
+      </div>
+      <p>Shopify POSTs to your HTTPS endpoint when a subscribed event occurs — <code style="font-family:'DM Mono',monospace; background:var(--surface-2); padding:2px 6px; border-radius:4px; font-size:12px;">orders/create</code>, <code style="font-family:'DM Mono',monospace; background:var(--surface-2); padding:2px 6px; border-radius:4px; font-size:12px;">products/update</code>, <code style="font-family:'DM Mono',monospace; background:var(--surface-2); padding:2px 6px; border-radius:4px; font-size:12px;">app/uninstalled</code>, and more.</p>
+      <ul class="check-list">
+        <li>Respond with <strong>2xx</strong> within a few seconds, or Shopify retries with backoff</li>
+        <li>Webhook deliveries do <strong>not</strong> count against your outbound API rate limits</li>
+        <li>Any Shopify API calls you make inside a webhook handler <strong>do</strong> count</li>
+        <li>Use for keeping external systems in sync without polling</li>
+      </ul>
+    </div>
+
+    <!-- Shopify Functions -->
+    <div class="section" id="functions">
+      <div class="section-header">
+        <div class="section-icon icon-purple">⚙️</div>
+        <h2>Shopify Functions</h2>
+      </div>
+      <p>WebAssembly functions deployed via Admin GraphQL, invoked by Shopify at checkout runtime (discounts, shipping, payment customizations). You deploy — Shopify calls them when relevant events occur. No direct API call per buyer action.</p>
+    </div>
+
+    <!-- Global Limits -->
+    <div class="section" id="limits">
+      <div class="section-header">
+        <div class="section-icon icon-amber">🛡️</div>
+        <h2>Global Limits</h2>
+      </div>
+      <p>These apply across all APIs, regardless of plan.</p>
+      <div class="stat-row">
+        <div class="stat-pill">
+          <div class="stat-num">250</div>
+          <div class="stat-label">Max items per input array</div>
+        </div>
+        <div class="stat-pill">
+          <div class="stat-num">25k</div>
+          <div class="stat-label">Max paginated objects</div>
+        </div>
+        <div class="stat-pill">
+          <div class="stat-num">1,000</div>
+          <div class="stat-label">New variants/day on 50k+ stores</div>
+        </div>
+      </div>
+      <div class="callout callout-blue">
+        Beyond 25,000 paginated items Shopify returns <strong>25001</strong> as a signal that more exist. Use filters to narrow down, or switch to bulk operations. The 1,000 variant/day limit does <strong>not</strong> apply to Shopify Plus.
+      </div>
+    </div>
+
+    <!-- Choosing -->
+    <div class="section" id="choose">
+      <div class="section-header">
+        <div class="section-icon icon-green">🔀</div>
+        <h2>Choosing Sync vs Async</h2>
+      </div>
+      <div class="decision-grid">
+        <div class="decision-card">
+          <div class="decision-icon">⚡</div>
+          <div class="decision-title">Sync GraphQL</div>
+          <div class="decision-desc">Low to moderate CRUD. Targeted queries. Creating or updating individual records.</div>
+        </div>
+        <div class="decision-card">
+          <div class="decision-icon">📦</div>
+          <div class="decision-title">Bulk Operations</div>
+          <div class="decision-desc">Mass exports, full catalog syncs, large imports. Would otherwise hit cost caps.</div>
+        </div>
+        <div class="decision-card">
+          <div class="decision-icon">🔔</div>
+          <div class="decision-title">Webhooks</div>
+          <div class="decision-desc">React to events without polling. Keep external systems in sync automatically.</div>
+        </div>
+      </div>
+
+      <h3>Quick decision rule</h3>
+      <ul class="check-list">
+        <li><strong>Low to moderate volume + targeted</strong> → synchronous GraphQL Admin API</li>
+        <li><strong>Would hit the 1,000-point query cap or drain your bucket</strong> → Bulk operations</li>
+        <li><strong>Need to react to something that happened</strong> → Webhooks</li>
+      </ul>
+    </div>
+
+    <!-- Resources -->
+    <div class="section" id="resources">
+      <div class="section-header">
+        <div class="section-icon icon-blue">🔗</div>
+        <h2>Official Resources</h2>
+      </div>
+      <div class="resource-grid">
+        <a class="resource-link" href="https://shopify.dev/docs/api/admin-graphql" target="_blank">GraphQL Admin API docs</a>
+        <a class="resource-link" href="https://shopify.dev/docs/api/usage/rate-limits" target="_blank">Compare rate limits by API</a>
+        <a class="resource-link" href="https://shopify.dev/docs/api/admin-rest" target="_blank">REST Admin API docs</a>
+        <a class="resource-link" href="https://shopify.dev/docs/api/usage/bulk-operations/overview" target="_blank">Bulk operations overview</a>
+        <a class="resource-link" href="https://shopify.dev/docs/api/storefront" target="_blank">Storefront API docs</a>
+        <a class="resource-link" href="https://shopify.dev/docs/api/webhooks" target="_blank">Webhooks guide</a>
+        <a class="resource-link" href="https://shopify.dev/docs/apps/functions" target="_blank">Shopify Functions overview</a>
+        <a class="resource-link" href="https://shopify.dev/docs/api/usage/rate-limits#graphql-admin-api" target="_blank">GraphQL rate limit details</a>
+      </div>
+    </div>
+
+    <div class="footer">
+      Generated with Claude · Shopify API Guide · <a href="https://shopify.dev/docs" style="color:var(--blue);">shopify.dev/docs</a>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  // Smooth scroll for sidebar nav
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', function(e) {
+      const href = this.getAttribute('href');
+      if (href && href.startsWith('#')) {
+        e.preventDefault();
+        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+        this.classList.add('active');
+        const target = document.querySelector(href);
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+
+  // Highlight active section on scroll
+  const sections = document.querySelectorAll('.section, .hero');
+  const navItems = document.querySelectorAll('.nav-item');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        navItems.forEach(item => {
+          item.classList.toggle('active', item.getAttribute('href') === '#' + id);
+        });
+      }
+    });
+  }, { threshold: 0.3 });
+  sections.forEach(s => { if (s.id) observer.observe(s); });
+</script>
+
+</body>
+</html>
