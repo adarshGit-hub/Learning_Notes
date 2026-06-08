@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shopify Backend Integration Layers — A Practical Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F6F2E9;
+    --paper-2:#EFEADD;
+    --card:#FCFAF4;
+    --ink:#1B1A16;
+    --ink-soft:#4B4942;
+    --ink-faint:#7C786C;
+    --line:#DBD4C2;
+    --line-strong:#C7BFA8;
+    --emerald:#1F5C3D;
+    --emerald-bright:#2E7D52;
+    --emerald-wash:#E7EFE6;
+    --clay:#A8442B;
+    --clay-wash:#F3E3DC;
+    --slate:#3D5366;
+    --slate-wash:#E4E9ED;
+    --amber:#9A6B12;
+    --amber-wash:#F1E8D2;
+    --shadow:0 1px 2px rgba(27,26,22,.05),0 8px 24px -12px rgba(27,26,22,.18);
+    --shadow-lg:0 2px 4px rgba(27,26,22,.06),0 24px 48px -20px rgba(27,26,22,.28);
+    --font-display:"Fraunces",Georgia,serif;
+    --font-body:"IBM Plex Sans",system-ui,sans-serif;
+    --font-mono:"IBM Plex Mono",ui-monospace,monospace;
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;scroll-padding-top:24px;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--font-body);
+    font-size:17px;
+    line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+    background-image:
+      linear-gradient(var(--line) 1px,transparent 1px),
+      linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:46px 46px;
+    background-position:-1px -1px;
+    background-attachment:fixed;
+  }
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+    background:radial-gradient(120% 80% at 50% 0%,transparent 40%,var(--paper) 100%);
+  }
+
+  /* ---------- HERO ---------- */
+  .hero{
+    position:relative;z-index:1;
+    max-width:1180px;margin:0 auto;padding:72px 32px 40px;
+  }
+  .eyebrow{
+    font-family:var(--font-mono);font-size:12px;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--emerald);font-weight:600;
+    display:flex;align-items:center;gap:12px;
+  }
+  .eyebrow::before{content:"";width:40px;height:2px;background:var(--emerald);display:inline-block;}
+  .hero h1{
+    font-family:var(--font-display);font-weight:600;
+    font-size:clamp(38px,6.2vw,76px);line-height:1.02;
+    letter-spacing:-.02em;margin:22px 0 0;max-width:16ch;
+    color:var(--ink);
+  }
+  .hero h1 em{font-style:italic;color:var(--emerald);font-weight:500;}
+  .hero .lede{
+    font-size:clamp(18px,2.2vw,22px);color:var(--ink-soft);
+    max-width:62ch;margin:26px 0 0;line-height:1.5;
+  }
+  .meta-row{
+    display:flex;flex-wrap:wrap;gap:10px;margin-top:32px;
+  }
+  .badge{
+    font-family:var(--font-mono);font-size:12.5px;font-weight:500;
+    padding:7px 14px;border-radius:999px;border:1px solid var(--line-strong);
+    background:var(--card);color:var(--ink-soft);display:inline-flex;gap:8px;align-items:center;
+  }
+  .badge .dot{width:7px;height:7px;border-radius:50%;background:var(--emerald-bright);}
+  .badge.scope{background:var(--emerald);color:#fff;border-color:var(--emerald);}
+  .badge.scope .dot{background:#fff;}
+
+  /* ---------- LAYOUT ---------- */
+  .layout{
+    position:relative;z-index:1;
+    max-width:1180px;margin:0 auto;padding:24px 32px 100px;
+    display:grid;grid-template-columns:248px 1fr;gap:56px;align-items:start;
+  }
+
+  /* ---------- TOC ---------- */
+  .toc{
+    position:sticky;top:24px;
+    font-size:14.5px;
+    border-left:2px solid var(--line);
+    padding-left:0;
+  }
+  .toc .toc-title{
+    font-family:var(--font-mono);font-size:11px;letter-spacing:.2em;
+    text-transform:uppercase;color:var(--ink-faint);font-weight:600;
+    padding:0 0 14px 18px;
+  }
+  .toc a{
+    display:block;text-decoration:none;color:var(--ink-soft);
+    padding:7px 0 7px 18px;margin-left:-2px;border-left:2px solid transparent;
+    transition:.18s;line-height:1.35;
+  }
+  .toc a .num{font-family:var(--font-mono);font-size:12px;color:var(--ink-faint);margin-right:8px;}
+  .toc a:hover{color:var(--ink);border-left-color:var(--line-strong);}
+  .toc a.active{color:var(--emerald);border-left-color:var(--emerald);font-weight:600;}
+  .toc a.active .num{color:var(--emerald);}
+
+  /* ---------- CONTENT ---------- */
+  .content{min-width:0;}
+  section{scroll-margin-top:24px;margin-bottom:72px;}
+  .sec-head{display:flex;gap:20px;align-items:baseline;margin-bottom:8px;}
+  .sec-num{
+    font-family:var(--font-display);font-size:clamp(34px,5vw,52px);
+    font-weight:400;color:var(--line-strong);line-height:1;
+    font-feature-settings:"ss01";flex:none;
+  }
+  h2{
+    font-family:var(--font-display);font-weight:600;
+    font-size:clamp(26px,3.6vw,38px);line-height:1.08;letter-spacing:-.015em;
+    margin:0;color:var(--ink);
+  }
+  h3{
+    font-family:var(--font-body);font-weight:700;font-size:19px;
+    margin:34px 0 10px;letter-spacing:-.01em;color:var(--ink);
+  }
+  p{margin:0 0 16px;}
+  .content p, .content li{color:var(--ink-soft);}
+  strong{color:var(--ink);font-weight:600;}
+  a.inline{color:var(--emerald);text-decoration:underline;text-underline-offset:2px;text-decoration-thickness:1px;}
+
+  ul,ol{margin:0 0 16px;padding-left:22px;}
+  li{margin-bottom:8px;}
+  li::marker{color:var(--emerald-bright);}
+
+  .intro-block{
+    background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:26px 28px;margin:20px 0 0;box-shadow:var(--shadow);
+  }
+  .intro-block p:last-child{margin-bottom:0;}
+
+  /* direction chip */
+  .flow{
+    display:inline-flex;align-items:center;gap:10px;flex-wrap:wrap;
+    font-family:var(--font-mono);font-size:13px;font-weight:500;
+    background:var(--paper-2);border:1px solid var(--line-strong);
+    padding:8px 14px;border-radius:10px;margin:22px 0 4px;color:var(--ink);
+  }
+  .flow .node{background:var(--card);border:1px solid var(--line);padding:3px 9px;border-radius:6px;}
+  .flow .node.sh{background:var(--emerald);color:#fff;border-color:var(--emerald);}
+  .flow .arrow{color:var(--emerald-bright);font-weight:600;}
+
+  /* spec grid */
+  .spec{
+    display:grid;grid-template-columns:140px 1fr;gap:0;
+    border:1px solid var(--line);border-radius:14px;overflow:hidden;
+    margin:24px 0;background:var(--card);box-shadow:var(--shadow);
+  }
+  .spec .k{
+    font-family:var(--font-mono);font-size:12px;letter-spacing:.04em;
+    text-transform:uppercase;color:var(--emerald);font-weight:600;
+    padding:16px 18px;border-bottom:1px solid var(--line);background:var(--emerald-wash);
+    display:flex;align-items:flex-start;
+  }
+  .spec .v{
+    padding:16px 20px;border-bottom:1px solid var(--line);font-size:15.5px;color:var(--ink-soft);
+  }
+  .spec .v:last-child,.spec .k:last-of-type{border-bottom:none;}
+  .spec .v p{margin:0;}
+  .spec .v strong{color:var(--ink);}
+
+  /* tradeoff cards */
+  .tradeoff{
+    display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:20px 0;
+  }
+  .t-card{
+    border:1px solid var(--line);border-radius:12px;padding:18px 20px;background:var(--card);
+  }
+  .t-card .lbl{
+    font-family:var(--font-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+    font-weight:600;margin-bottom:8px;display:inline-block;
+  }
+  .t-card.pro{border-top:3px solid var(--emerald-bright);}
+  .t-card.pro .lbl{color:var(--emerald);}
+  .t-card.con{border-top:3px solid var(--amber);}
+  .t-card.con .lbl{color:var(--amber);}
+  .t-card p{margin:0;font-size:15px;}
+
+  /* must-do vs negotiable */
+  .rules{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:24px 0;}
+  .rule-col{border-radius:14px;padding:22px 24px;border:1px solid var(--line);}
+  .rule-col.must{background:var(--clay-wash);border-color:#E3C8BD;}
+  .rule-col.nice{background:var(--slate-wash);border-color:#CCD6DD;}
+  .rule-col h4{
+    margin:0 0 14px;font-family:var(--font-mono);font-size:12px;letter-spacing:.1em;
+    text-transform:uppercase;font-weight:600;display:flex;align-items:center;gap:9px;
+  }
+  .rule-col.must h4{color:var(--clay);}
+  .rule-col.nice h4{color:var(--slate);}
+  .rule-col h4 .tag{
+    font-size:10px;padding:2px 8px;border-radius:999px;letter-spacing:.06em;
+  }
+  .rule-col.must h4 .tag{background:var(--clay);color:#fff;}
+  .rule-col.nice h4 .tag{background:var(--slate);color:#fff;}
+  .rule-col ul{margin:0;padding-left:0;list-style:none;}
+  .rule-col li{
+    position:relative;padding-left:26px;margin-bottom:11px;font-size:15px;color:var(--ink-soft);
+  }
+  .rule-col li:last-child{margin-bottom:0;}
+  .rule-col.must li::before{content:"●";position:absolute;left:0;top:0;color:var(--clay);font-size:13px;}
+  .rule-col.nice li::before{content:"○";position:absolute;left:0;top:0;color:var(--slate);font-size:13px;}
+
+  /* code */
+  pre{
+    background:#211F1A;color:#EDE7D7;border-radius:12px;padding:18px 20px;
+    overflow-x:auto;font-family:var(--font-mono);font-size:13.5px;line-height:1.6;
+    margin:18px 0;box-shadow:var(--shadow);border:1px solid #322F28;
+  }
+  pre .c{color:#8C9B7E;}      /* comment */
+  pre .k{color:#C99A6B;}      /* keyword */
+  pre .s{color:#A7C0A0;}      /* string */
+  pre .f{color:#D9C27A;}      /* field */
+  code{font-family:var(--font-mono);font-size:.88em;background:var(--paper-2);
+    padding:2px 6px;border-radius:5px;color:var(--ink);border:1px solid var(--line);}
+  pre code{background:none;border:none;padding:0;color:inherit;}
+
+  /* callout */
+  .note{
+    border-left:3px solid var(--emerald-bright);background:var(--emerald-wash);
+    padding:14px 18px;border-radius:0 10px 10px 0;margin:20px 0;font-size:15px;color:var(--ink-soft);
+  }
+  .note.warn{border-left-color:var(--amber);background:var(--amber-wash);}
+  .note strong{color:var(--ink);}
+  .note .nt{font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    font-weight:600;display:block;margin-bottom:4px;color:var(--emerald);}
+  .note.warn .nt{color:var(--amber);}
+
+  /* architecture diagram */
+  .arch{
+    background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:28px;margin:22px 0;box-shadow:var(--shadow);
+  }
+  .arch h4{margin:0 0 6px;font-family:var(--font-display);font-weight:600;font-size:21px;color:var(--ink);}
+  .arch .sub{font-size:14.5px;color:var(--ink-faint);margin:0 0 22px;}
+  .arch-flow{display:flex;flex-wrap:wrap;align-items:stretch;gap:14px;}
+  .box{
+    flex:1;min-width:150px;border:1px solid var(--line-strong);border-radius:12px;
+    padding:14px 16px;background:var(--paper);
+  }
+  .box.shop{background:var(--emerald);color:#fff;border-color:var(--emerald);}
+  .box .bt{font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+    font-weight:600;margin-bottom:6px;color:var(--emerald);}
+  .box.shop .bt{color:#cfe6d6;}
+  .box .bd{font-size:13.5px;line-height:1.45;color:var(--ink-soft);}
+  .box.shop .bd{color:#eaf3ec;}
+  .conn{display:flex;flex-direction:column;justify-content:center;gap:6px;align-items:center;min-width:120px;}
+  .conn .lab{font-family:var(--font-mono);font-size:11px;color:var(--emerald);text-align:center;font-weight:500;}
+  .conn .ln{font-size:18px;color:var(--emerald-bright);}
+
+  /* summary final */
+  .final{
+    background:linear-gradient(180deg,var(--card),var(--paper-2));
+    border:1px solid var(--line-strong);border-radius:18px;padding:30px 32px;box-shadow:var(--shadow-lg);
+  }
+
+  footer{
+    max-width:1180px;margin:0 auto;padding:0 32px 80px;position:relative;z-index:1;
+    font-size:13.5px;color:var(--ink-faint);font-family:var(--font-mono);
+    border-top:1px solid var(--line);padding-top:28px;
+  }
+  footer a{color:var(--emerald);}
+
+  /* mobile nav */
+  .nav-toggle{display:none;}
+
+  @media(max-width:900px){
+    .layout{grid-template-columns:1fr;gap:0;padding-top:0;}
+    .toc{
+      position:fixed;top:0;left:0;right:0;bottom:0;z-index:50;
+      background:var(--card);border-left:none;padding:80px 28px 28px;
+      overflow-y:auto;transform:translateX(-100%);transition:.3s;
+      box-shadow:var(--shadow-lg);
+    }
+    .toc.open{transform:translateX(0);}
+    .nav-toggle{
+      display:flex;align-items:center;gap:9px;position:fixed;top:16px;right:16px;z-index:60;
+      background:var(--emerald);color:#fff;border:none;border-radius:999px;
+      padding:11px 18px;font-family:var(--font-mono);font-size:13px;font-weight:600;
+      cursor:pointer;box-shadow:var(--shadow-lg);
+    }
+    .tradeoff,.rules,.spec{grid-template-columns:1fr;}
+    .spec .k{border-bottom:none;padding-bottom:4px;background:var(--card);}
+    .spec .v{padding-top:4px;}
+    .spec{gap:0;}
+    .arch-flow{flex-direction:column;}
+    .conn{flex-direction:row;min-width:0;padding:4px 0;}
+    .conn .ln{transform:rotate(90deg);}
+    .hero{padding:56px 24px 32px;}
+    .content section{margin-bottom:56px;}
+    body{font-size:16px;}
+  }
+</style>
+</head>
+<body>
+
+<button class="nav-toggle" id="navToggle">☰ Contents</button>
+
+<header class="hero">
+  <div class="eyebrow">Backend Integration · Field Guide</div>
+  <h1>Talking to Shopify from <em>your</em> systems</h1>
+  <p class="lede">A practical, medium-depth map of Shopify's backend integration surfaces — the APIs, events, in-platform logic, and analytics paths — written for engineers who know integrations but are new to Shopify.</p>
+  <div class="meta-row">
+    <span class="badge scope"><span class="dot"></span>Scope: backend only</span>
+    <span class="badge"><span class="dot"></span>~20–30 min read</span>
+    <span class="badge"><span class="dot"></span>Aligned to Shopify docs · 2025–26</span>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- TOC -->
+  <aside class="toc" id="toc">
+    <div class="toc-title">On this page</div>
+    <a href="#big-picture"><span class="num">01</span>Big picture</a>
+    <a href="#admin-api"><span class="num">02</span>Admin API</a>
+    <a href="#webhooks"><span class="num">03</span>Webhooks</a>
+    <a href="#functions"><span class="num">04</span>Shopify Functions</a>
+    <a href="#analytics"><span class="num">05</span>Data &amp; ShopifyQL</a>
+    <a href="#patterns"><span class="num">06</span>Putting it together</a>
+    <a href="#summary"><span class="num">07</span>Summary</a>
+  </aside>
+
+  <main class="content">
+
+    <!-- ============ 1 ============ -->
+    <section id="big-picture">
+      <div class="sec-head"><span class="sec-num">01</span><h2>Big picture: what are "Shopify backend integration layers"?</h2></div>
+
+      <p>If you've integrated with any platform before, the mental model here is familiar. A <strong>Shopify store is a hosted system that owns your commerce data</strong> — products, inventory, orders, customers, fulfillment. Your job, as an integration engineer, is to connect that system to the rest of your world: an ERP, a warehouse system, a CRM, a data warehouse, custom pricing logic, and so on.</p>
+
+      <p>"Integration layers" is just the set of <strong>surfaces where data and control cross the boundary</strong> between Shopify and everything else. There are only a few of them, and they each answer a different question:</p>
+
+      <div class="intro-block">
+        <ul style="margin-bottom:0;">
+          <li><strong>Admin API (GraphQL &amp; REST)</strong> — <em>"How does my backend read and write Shopify data?"</em> You call Shopify on a schedule or on demand.</li>
+          <li><strong>Webhooks</strong> — <em>"How does Shopify tell me the moment something changes?"</em> Shopify calls you when events happen.</li>
+          <li><strong>Shopify Functions</strong> — <em>"How do I customize Shopify's own decisions?"</em> Small logic that runs <em>inside</em> Shopify, right in critical flows like checkout.</li>
+          <li><strong>Data &amp; analytics / ShopifyQL</strong> — <em>"How do I get clean data out for reporting and BI?"</em> Querying and exporting for analytics rather than transactions.</li>
+        </ul>
+      </div>
+
+      <p>A useful way to hold all four in your head: the first two are about <strong>moving data across the boundary</strong> (pull vs push), the third is about <strong>injecting logic into Shopify</strong>, and the fourth is about <strong>getting data out for analysis</strong> without abusing the transactional APIs.</p>
+
+      <div class="note warn">
+        <span class="nt">Out of scope here</span>
+        This guide is deliberately backend-only. We're <strong>not</strong> covering the Storefront API, themes/Liquid, Checkout UI extensions, App Bridge, or any embedded-app UI. Those are real and important — they're just a different conversation.
+      </div>
+
+      <p>One more framing that pays off immediately: in Shopify, <strong>almost everything you build attaches to an "app."</strong> Even a private integration that only your company uses is technically a <em>custom app</em>. The app is the thing that holds your credentials, your permission scopes, your webhook subscriptions, and your deployed Functions. Keep that in mind as you read — "create an app" keeps showing up because it's the container for all of it.</p>
+    </section>
+
+    <!-- ============ 2 ============ -->
+    <section id="admin-api">
+      <div class="sec-head"><span class="sec-num">02</span><h2>Admin API — the core backend API</h2></div>
+
+      <p>The Admin API is your <strong>main read/write channel into a store</strong>. When your backend needs to know about or change something in Shopify, this is almost always how it happens. Typical jobs:</p>
+
+      <ul>
+        <li>Sync products and prices <strong>from an ERP/PIM into Shopify</strong>.</li>
+        <li>Pull orders <strong>into a data warehouse or accounting system</strong>.</li>
+        <li>Push inventory levels <strong>from a WMS</strong> when stock changes.</li>
+        <li>Sync customers <strong>out to a CRM</strong>, or enrich Shopify customers from one.</li>
+        <li>Create fulfillments, issue refunds, manage discounts, and so on.</li>
+      </ul>
+
+      <div class="flow">
+        <span class="node">Your backend</span><span class="arrow">— authenticated request →</span><span class="node sh">Shopify</span><span class="arrow">— JSON response →</span><span class="node">Your backend</span>
+      </div>
+
+      <h3>GraphQL vs REST — and the important 2024 change</h3>
+      <p>The Admin API comes in two flavors, but they are <strong>no longer equal footing</strong>, and this is the single most important thing to internalize as a newcomer:</p>
+      <ul>
+        <li><strong>GraphQL Admin API</strong> — the modern, primary API. You ask for exactly the fields you want in one request, which avoids over-fetching and reduces round-trips. Shopify is investing all new capabilities here (including the larger product/variant limits).</li>
+        <li><strong>REST Admin API</strong> — the older, familiar resource-per-endpoint style. As of <strong>October 1, 2024 it is officially "legacy."</strong> Since <strong>April 1, 2025, new public apps must be built on GraphQL.</strong> Existing/custom apps can still call REST for now, but it receives no new features and Shopify is steering everyone off it.</li>
+      </ul>
+
+      <div class="note">
+        <span class="nt">Practical takeaway</span>
+        The old advice was "REST is easier to start with." That's now outdated. <strong>For anything new, start with GraphQL.</strong> The learning curve is small for a backend engineer, and you avoid building on a deprecated foundation you'll have to rip out later. Reach for REST only if you're maintaining something that already uses it.
+      </div>
+
+      <p>A tiny GraphQL request looks like this — note you name the fields you want back:</p>
+      <pre><code><span class="c"># POST /admin/api/2025-10/graphql.json</span>
+<span class="k">query</span> {
+  orders(first: <span class="f">10</span>, query: <span class="s">"financial_status:paid"</span>) {
+    edges { node {
+      <span class="f">id</span>
+      <span class="f">name</span>
+      <span class="f">createdAt</span>
+      totalPriceSet { shopMoney { <span class="f">amount</span> <span class="f">currencyCode</span> } }
+    } }
+  }
+}</code></pre>
+
+      <div class="spec">
+        <div class="k">Inputs</div>
+        <div class="v"><p>Authenticated HTTPS calls from your backend or integration platform — a GraphQL query/mutation (or a REST request), carrying an access token in the header.</p></div>
+        <div class="k">Outputs</div>
+        <div class="v"><p>JSON containing Shopify data — products, orders, customers, inventory, fulfillments, etc. With GraphQL, the response shape mirrors exactly what you asked for.</p></div>
+        <div class="k">Prerequisites</div>
+        <div class="v"><p>① A Shopify <strong>app</strong> (a custom app is fine for internal use). ② An <strong>access token</strong> plus the right <strong>scopes</strong> (e.g. <code>read_orders</code>, <code>write_inventory</code>) — request only what you need. ③ Awareness of <strong>rate limits</strong> so you don't get throttled.</p></div>
+        <div class="k">Cost model</div>
+        <div class="v"><p>GraphQL uses a <strong>calculated-cost</strong> rate limit (each query has a point cost against a refilling bucket); REST uses a simpler <strong>request-count</strong> limit. Either way: pace yourself and back off when told to.</p></div>
+      </div>
+
+      <h3>When polling is fine vs when you want events</h3>
+      <p>The Admin API is a <em>pull</em> mechanism, so you decide how often to pull. Simple <strong>scheduled polling</strong> ("sync every 5–15 minutes") is perfectly acceptable when near-real-time is good enough — nightly catalog syncs, periodic reconciliation, batch exports. But polling for things that need to feel instant (e.g. reacting the second an order is placed) is wasteful and laggy. That's exactly what <a href="#webhooks" class="inline">webhooks</a> are for. A very common, healthy pattern is <strong>webhooks for "react now" + a periodic poll as a safety net</strong> to catch anything missed.</p>
+
+      <div class="rules">
+        <div class="rule-col must">
+          <h4><span class="tag">Must-do</span>Non-negotiable</h4>
+          <ul>
+            <li><strong>Handle rate limits.</strong> Detect throttling and back off (exponential backoff + retry). Never hammer through a <code>429</code>.</li>
+            <li><strong>Store credentials securely.</strong> Access tokens are secrets — vault/secret manager, never in code or logs.</li>
+            <li><strong>Don't treat it as a reporting engine.</strong> No giant analytical scans on the transactional API. Use the analytics path instead (§5).</li>
+            <li><strong>Pin an API version</strong> and track Shopify's quarterly releases so you migrate deliberately, not by surprise.</li>
+          </ul>
+        </div>
+        <div class="rule-col nice">
+          <h4><span class="tag">Optional</span>Negotiable</h4>
+          <ul>
+            <li><strong>REST vs GraphQL</strong> — though for new work, GraphQL is the clear default.</li>
+            <li><strong>How real-time</strong> your sync is — every few minutes vs near-instant via webhooks.</li>
+            <li><strong>Where the integration runs</strong> — your own service vs an iPaaS/integration platform.</li>
+            <li><strong>Bulk operations</strong> for very large reads/writes — adopt when volume demands it.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 3 ============ -->
+    <section id="webhooks">
+      <div class="sec-head"><span class="sec-num">03</span><h2>Webhooks — the event layer</h2></div>
+
+      <p>Webhooks flip the direction. Instead of <em>you</em> asking Shopify "anything new?", <strong>Shopify proactively sends an HTTP <code>POST</code> to a URL you control</strong> the moment something happens — an order is created, a product is updated, an order is paid or cancelled, inventory changes, and so on.</p>
+
+      <div class="flow">
+        <span class="node sh">Shopify</span><span class="arrow">— event happens, POST →</span><span class="node">Your HTTPS endpoint</span><span class="arrow">— 200 OK →</span><span class="node sh">Shopify</span>
+      </div>
+
+      <p>You subscribe to specific event <strong>topics</strong> (like <code>orders/create</code> or <code>products/update</code>) and give Shopify a destination. When the event fires, your endpoint receives a JSON payload describing what changed. A payload skeleton for an order looks roughly like:</p>
+
+      <pre><code><span class="c">// POST from Shopify → https://api.yourco.com/hooks/shopify</span>
+{
+  <span class="f">"id"</span>: 820982911946154500,
+  <span class="f">"name"</span>: <span class="s">"#1001"</span>,
+  <span class="f">"financial_status"</span>: <span class="s">"paid"</span>,
+  <span class="f">"line_items"</span>: [ { <span class="f">"sku"</span>: <span class="s">"ABC-01"</span>, <span class="f">"quantity"</span>: 2 } ],
+  <span class="f">"customer"</span>: { <span class="f">"id"</span>: 115310627314723950 }
+}
+<span class="c">// Header: X-Shopify-Hmac-SHA256: &lt;signature you MUST verify&gt;</span></code></pre>
+
+      <div class="spec">
+        <div class="k">Inputs</div>
+        <div class="v"><p>Your configuration: which <strong>topics</strong> you care about + a reachable <strong>HTTPS URL</strong> (or an integration platform / event bus endpoint). You can also stream to managed destinations like a pub/sub queue.</p></div>
+        <div class="k">Outputs</div>
+        <div class="v"><p>JSON payloads delivered to your endpoint describing the changed resource. Your service responds <code>200</code> quickly to acknowledge receipt.</p></div>
+        <div class="k">Prerequisites</div>
+        <div class="v"><p>① A <strong>public HTTPS endpoint</strong> Shopify can reach. ② The ability to <strong>verify the HMAC signature</strong> on each request. ③ A plan for <strong>retries &amp; duplicates</strong> — Shopify retries on failure, so the same event can arrive more than once.</p></div>
+      </div>
+
+      <h3>Webhooks vs polling</h3>
+      <div class="tradeoff">
+        <div class="t-card pro">
+          <span class="lbl">Webhooks win on</span>
+          <p>Freshness and efficiency. You hear about changes within seconds and you don't burn API calls asking "anything new?" thousands of times a day.</p>
+        </div>
+        <div class="t-card con">
+          <span class="lbl">Webhooks cost you</span>
+          <p>Reliability engineering. You own signature verification, retries, deduplication, and an always-available endpoint. Miss a delivery and you may need a reconciliation poll to recover.</p>
+        </div>
+      </div>
+      <p>Polling is conceptually simpler and stateless-feeling, but it's less real-time and less efficient at scale. Most mature integrations use <strong>both</strong>: webhooks for immediacy, plus a low-frequency poll to heal any gaps.</p>
+
+      <div class="rules">
+        <div class="rule-col must">
+          <h4><span class="tag">Must-do</span>Non-negotiable</h4>
+          <ul>
+            <li><strong>Verify the HMAC signature</strong> on every webhook. Unsigned/invalid requests are rejected — this is your authenticity check.</li>
+            <li><strong>Make handlers idempotent.</strong> Assume any event can arrive twice; processing it again must be safe (dedupe on event/resource id).</li>
+            <li><strong>Don't do heavy work in the request.</strong> Acknowledge fast, then offload to a background job/queue. Slow handlers cause timeouts and retries.</li>
+            <li><strong>Return 2xx quickly</strong> on success; let failures trigger Shopify's retry rather than hanging.</li>
+          </ul>
+        </div>
+        <div class="rule-col nice">
+          <h4><span class="tag">Optional</span>Negotiable</h4>
+          <ul>
+            <li><strong>Which topics</strong> you subscribe to first — start with a small, high-value set (e.g. <code>orders/create</code>) and grow.</li>
+            <li><strong>Whether you keep a safety-net poll</strong> alongside webhooks (recommended, but a judgment call).</li>
+            <li><strong>Delivery target</strong> — your own endpoint vs a managed queue/event-bus destination.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 4 ============ -->
+    <section id="functions">
+      <div class="sec-head"><span class="sec-num">04</span><h2>Shopify Functions — business logic inside Shopify</h2></div>
+
+      <p>Functions are different in kind from the first two surfaces. Instead of moving data across the boundary, you're <strong>shipping a small piece of your logic to run <em>inside</em> Shopify</strong>, right in the middle of critical flows where calling out to an external service would be too slow or too risky.</p>
+
+      <p>They're how you customize Shopify's <em>own</em> decisions: discount calculations, shipping/delivery option logic, payment method ordering, cart and checkout validations, and similar. Shopify hands your Function a defined input, your code runs in milliseconds, and it returns a decision.</p>
+
+      <div class="flow">
+        <span class="node sh">Shopify (checkout flow)</span><span class="arrow">— input: cart, products →</span><span class="node">Your Function (Wasm)</span><span class="arrow">— output: decision →</span><span class="node sh">Shopify</span>
+      </div>
+
+      <div class="spec">
+        <div class="k">Inputs</div>
+        <div class="v"><p>A <strong>defined, schema-bound input</strong> Shopify passes you — data about the cart, line items, products, customer, etc. You declare exactly which fields you need via an input query.</p></div>
+        <div class="k">Outputs</div>
+        <div class="v"><p>A <strong>structured decision</strong> — e.g. a discount amount, which delivery/payment options are allowed or reordered, whether to block checkout with a validation error.</p></div>
+        <div class="k">Prerequisites</div>
+        <div class="v"><p>① A Shopify <strong>app</strong> that defines and deploys the Function. ② Familiarity with that Function type's <strong>schema</strong> and basic programming — Functions compile to <strong>WebAssembly</strong> (Rust is the recommended language; JS/others are supported).</p></div>
+        <div class="k">Runtime</div>
+        <div class="v"><p>Extremely fast and deterministic, with <strong>tight CPU/memory/time limits</strong>. It runs as part of Shopify's flow, not as a long-running service.</p></div>
+      </div>
+
+      <h3>What they're great at — and what they're not</h3>
+      <div class="tradeoff">
+        <div class="t-card pro">
+          <span class="lbl">Strengths</span>
+          <p>Fast, reliable, and right next to checkout. Perfect for <strong>decisions</strong> that must happen in-flow: pricing rules, discount logic, shipping/payment customization, validations.</p>
+        </div>
+        <div class="t-card con">
+          <span class="lbl">Limits</span>
+          <p>Not for workflows or heavy integration. By default a Function <strong>cannot make arbitrary network calls</strong> or do long-running work — it must be self-contained and quick.</p>
+        </div>
+      </div>
+
+      <div class="note warn">
+        <span class="nt">Nuance worth knowing</span>
+        Shopify has introduced a <strong>network access</strong> capability for certain Functions (e.g. validations, discounts) — but it's <strong>early access, enterprise-only, must be enabled by Shopify</strong>, and works through a constrained, cached <code>fetch</code>-then-<code>run</code> pattern rather than free-form HTTP. <strong>Treat "no external calls" as your default mental model.</strong> If you find yourself wanting one, first ask whether the data could instead be pre-loaded into a <strong>metafield</strong> the Function can read — that's usually the cleaner answer.
+      </div>
+
+      <p>The healthy division of labor: <strong>keep complex/heavy logic in your external systems</strong> (kept in sync via the Admin API and webhooks), and <strong>push only the fast, in-flow decision</strong> into a Function. Don't try to make a Function the brain of your integration.</p>
+
+      <div class="rules">
+        <div class="rule-col must">
+          <h4><span class="tag">Must-do</span>Non-negotiable</h4>
+          <ul>
+            <li><strong>Don't rely on Functions to call external systems.</strong> Design them to be self-contained by default.</li>
+            <li><strong>Keep logic simple and deterministic.</strong> Same input → same output, well within the time/CPU budget.</li>
+            <li><strong>Use metafields</strong> to feed in data the Function needs, rather than reaching out at runtime.</li>
+          </ul>
+        </div>
+        <div class="rule-col nice">
+          <h4><span class="tag">Optional</span>Negotiable</h4>
+          <ul>
+            <li><strong>How much logic</strong> you move into Functions vs keep external and sync via API.</li>
+            <li><strong>Language choice</strong> (Rust recommended for performance; others compile to Wasm too).</li>
+            <li><strong>Whether enterprise network access</strong> is worth pursuing for a specific edge case.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 5 ============ -->
+    <section id="analytics">
+      <div class="sec-head"><span class="sec-num">05</span><h2>Data &amp; analytics / ShopifyQL — getting data out</h2></div>
+
+      <p>Reporting and BI are a <strong>separate concern from your transactional integrations</strong>, and conflating them is a classic early mistake. Shopify gives you purpose-built ways to query and export data for analysis, so you don't end up scanning the transactional Admin API to build dashboards.</p>
+
+      <p>The main paths:</p>
+      <ul>
+        <li><strong>ShopifyQL</strong> — Shopify's commerce-focused, SQL-like query language for analytics (sales, orders, products, customers, sessions), with built-in time-series and period-comparison support. Historically it lived in the admin's report editor; as of <strong>October 2025 you can also run ShopifyQL programmatically</strong> via a <code>shopifyqlQuery</code> field on the GraphQL Admin API (and there's a Python SDK for analytics workflows).</li>
+        <li><strong>Built-in reports &amp; exports</strong> — the admin's own analytics, plus CSV/data exports of orders, customers, products for ad-hoc needs.</li>
+        <li><strong>A data warehouse</strong> — for anything serious, you move Shopify data (via Admin API / bulk operations / webhooks) into a warehouse and treat Shopify as <em>one source among many</em>.</li>
+      </ul>
+
+      <pre><code><span class="c">-- ShopifyQL: monthly sales this year</span>
+<span class="k">FROM</span> sales
+<span class="k">SHOW</span> total_sales
+<span class="k">GROUP BY</span> month
+<span class="k">SINCE</span> startOfYear(0y)
+<span class="k">ORDER BY</span> month</code></pre>
+
+      <div class="spec">
+        <div class="k">Inputs</div>
+        <div class="v"><p>Queries (ShopifyQL) or export/extract requests. Programmatic ShopifyQL goes through the GraphQL Admin API.</p></div>
+        <div class="k">Outputs</div>
+        <div class="v"><p>Structured tabular data — rows/columns of orders, customers, products, sales metrics — ready for reports, dashboards, or a warehouse load.</p></div>
+        <div class="k">Prerequisites</div>
+        <div class="v"><p>A working understanding of Shopify's core <strong>data objects</strong> — orders, line items, customers, products, inventory — and how they relate. (Plan availability can affect some analytics features.)</p></div>
+      </div>
+
+      <h3>Built-in reporting vs your own stack</h3>
+      <div class="tradeoff">
+        <div class="t-card pro">
+          <span class="lbl">Built-in is enough when</span>
+          <p>You need standard commerce reports for a single store, day-to-day operational decisions, and don't need to blend Shopify with other data sources. Start here.</p>
+        </div>
+        <div class="t-card con">
+          <span class="lbl">Build a warehouse when</span>
+          <p>You need to join Shopify with ERP/CRM/marketing data, keep long history, do custom modeling, or serve a BI team. Then Shopify becomes one input to a proper pipeline.</p>
+        </div>
+      </div>
+
+      <div class="note warn">
+        <span class="nt">The one trap to avoid</span>
+        Programmatic ShopifyQL still runs over the GraphQL Admin API and is subject to its <strong>rate limits</strong> (and there's no bulk-job mode for it). So even the "right" analytics path can be misused — don't fire heavy queries in tight loops. For large/scheduled analytics, lean on exports or a warehouse, not rapid-fire live queries.
+      </div>
+
+      <div class="rules">
+        <div class="rule-col must">
+          <h4><span class="tag">Must-do</span>Non-negotiable</h4>
+          <ul>
+            <li><strong>Don't hammer transactional APIs for analytics workloads.</strong> Use the analytics/export paths designed for it.</li>
+            <li><strong>Respect rate limits</strong> even on ShopifyQL-over-GraphQL — it shares the same budget.</li>
+          </ul>
+        </div>
+        <div class="rule-col nice">
+          <h4><span class="tag">Optional</span>Negotiable</h4>
+          <ul>
+            <li><strong>Whether to invest early in a warehouse</strong> — or start with built-in reports/exports and graduate later.</li>
+            <li><strong>Which BI tooling</strong> sits on top, and how often you refresh.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 6 ============ -->
+    <section id="patterns">
+      <div class="sec-head"><span class="sec-num">06</span><h2>Putting it together: starter patterns</h2></div>
+      <p>Two concrete architectures a new team can actually ship. Both are intentionally modest — you can layer more on later.</p>
+
+      <div class="arch">
+        <h4>Pattern A — Small brand, one external system (ERP / inventory)</h4>
+        <p class="sub">Goal: keep catalog and inventory aligned, and capture orders, without overbuilding.</p>
+        <div class="arch-flow">
+          <div class="box">
+            <div class="bt">Your ERP / WMS</div>
+            <div class="bd">System of record for products &amp; stock</div>
+          </div>
+          <div class="conn">
+            <span class="lab">Admin API<br>periodic push/pull</span>
+            <span class="ln">⇄</span>
+          </div>
+          <div class="box shop">
+            <div class="bt">Shopify</div>
+            <div class="bd">Storefront + order capture</div>
+          </div>
+          <div class="conn">
+            <span class="lab">Webhooks<br>orders/create</span>
+            <span class="ln">→</span>
+          </div>
+          <div class="box">
+            <div class="bt">Your integration service</div>
+            <div class="bd">Receives orders, queues for ERP</div>
+          </div>
+        </div>
+        <p style="margin:20px 0 0;font-size:15px;"><strong>Who owns what:</strong> the <strong>Admin API</strong> handles scheduled product/inventory sync (every few minutes is fine). A small set of <strong>webhooks</strong> (<code>orders/create</code>, maybe <code>orders/paid</code>) gives near-real-time order capture so fulfillment isn't waiting on the next poll. A <strong>nightly reconciliation poll</strong> heals any missed webhook. No Functions, no warehouse yet — built-in reports cover analytics.</p>
+      </div>
+
+      <div class="arch">
+        <h4>Pattern B — Brand that wants smarter pricing/discount logic</h4>
+        <p class="sub">Goal: custom discount rules at checkout, while keeping external systems in sync.</p>
+        <div class="arch-flow">
+          <div class="box shop">
+            <div class="bt">Shopify Function</div>
+            <div class="bd">Discount logic, runs in checkout</div>
+          </div>
+          <div class="conn">
+            <span class="lab">reads</span>
+            <span class="ln">←</span>
+          </div>
+          <div class="box">
+            <div class="bt">Metafields</div>
+            <div class="bd">Rule data pushed in advance</div>
+          </div>
+          <div class="conn">
+            <span class="lab">Admin API<br>+ webhooks</span>
+            <span class="ln">⇄</span>
+          </div>
+          <div class="box">
+            <div class="bt">Your backend</div>
+            <div class="bd">Owns rules, products, orders sync</div>
+          </div>
+        </div>
+        <p style="margin:20px 0 0;font-size:15px;"><strong>Who owns what:</strong> a <strong>Shopify Function</strong> makes the fast, in-flow discount decision — fed by <strong>metafields</strong> your backend populates ahead of time (not live calls). The <strong>Admin API</strong> keeps products and rule metafields current; <strong>webhooks</strong> keep your backend informed of orders and product changes. The heavy "how should pricing work" logic lives in your backend; only the lightweight decision lives in the Function.</p>
+      </div>
+
+      <div class="note">
+        <span class="nt">The pattern behind the patterns</span>
+        Notice the recurring shape: <strong>external systems hold the complex logic and history; the Admin API + webhooks keep both sides in sync; Functions hold only the fast in-flow decisions; analytics flows out separately.</strong> If you keep those responsibilities clean, your integration stays sane as it grows.
+      </div>
+    </section>
+
+    <!-- ============ 7 ============ -->
+    <section id="summary">
+      <div class="sec-head"><span class="sec-num">07</span><h2>Summary — negotiables vs non-negotiables</h2></div>
+
+      <div class="final">
+        <div class="rules" style="margin:0;">
+          <div class="rule-col must">
+            <h4><span class="tag">Must-do</span>True for almost any serious integration</h4>
+            <ul>
+              <li><strong>Respect Admin API rate limits</strong> and handle retries with backoff.</li>
+              <li><strong>Verify every webhook (HMAC)</strong> and make handlers <strong>idempotent</strong>.</li>
+              <li><strong>Never block checkout or critical flows on slow external calls</strong> — keep in-flow logic inside Shopify (Functions) and everything else asynchronous.</li>
+              <li><strong>Store secrets safely</strong> (API keys, access tokens) in a real secret manager.</li>
+              <li><strong>Keep analytics off the transactional APIs</strong> — use ShopifyQL/exports/a warehouse.</li>
+              <li><strong>Pin and track API versions</strong> so quarterly changes never surprise you.</li>
+            </ul>
+          </div>
+          <div class="rule-col nice">
+            <h4><span class="tag">Optional</span>Decide later as you mature</h4>
+            <ul>
+              <li><strong>REST vs GraphQL</strong> — but default to <strong>GraphQL</strong> for anything new; REST is legacy.</li>
+              <li><strong>How real-time</strong> your sync needs to be (minutes vs seconds).</li>
+              <li><strong>How heavily you use Functions</strong> vs external logic synced via API.</li>
+              <li><strong>Whether and when to build</strong> a dedicated analytics pipeline.</li>
+              <li><strong>Own service vs integration platform</strong> for running the glue.</li>
+              <li><strong>Bulk operations</strong> — adopt when data volume justifies it.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <p style="margin-top:28px;">If you remember nothing else: <strong>pull with the Admin API, get pushed to via webhooks, inject in-flow decisions with Functions, and pull analytics out separately.</strong> Get the four non-negotiables right (rate limits, webhook verification + idempotency, never block checkout, secure secrets) and you'll have a foundation that scales cleanly from your first sync to a full commerce platform integration.</p>
+    </section>
+
+  </main>
+</div>
+
+<footer>
+  Shopify Backend Integration Layers — practical field guide · backend-only scope · concepts aligned with Shopify's Admin API (GraphQL/REST), Webhooks, Apps, Functions, and ShopifyQL documentation, simplified · reflects the 2024–25 shift to GraphQL-first.
+</footer>
+
+<script>
+  // mobile nav toggle
+  const toggle = document.getElementById('navToggle');
+  const toc = document.getElementById('toc');
+  toggle.addEventListener('click', () => toc.classList.toggle('open'));
+  toc.querySelectorAll('a').forEach(a => a.addEventListener('click', () => toc.classList.remove('open')));
+
+  // scroll-spy
+  const links = [...document.querySelectorAll('.toc a')];
+  const map = {};
+  links.forEach(l => map[l.getAttribute('href').slice(1)] = l);
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        if (map[e.target.id]) map[e.target.id].classList.add('active');
+      }
+    });
+  }, { rootMargin: '-10% 0px -75% 0px', threshold: 0 });
+  document.querySelectorAll('section[id]').forEach(s => obs.observe(s));
+</script>
+
+</body>
+</html>
