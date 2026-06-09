@@ -165,7 +165,7 @@
 
   /* spec grid */
   .spec{
-    display:grid;grid-template-columns:140px 1fr;gap:0;
+    display:grid;grid-template-columns:220px 1fr;gap:0;
     border:1px solid var(--line);border-radius:14px;overflow:hidden;
     margin:24px 0;background:var(--card);box-shadow:var(--shadow);
   }
@@ -173,7 +173,6 @@
     font-family:var(--font-mono);font-size:12px;letter-spacing:.04em;
     text-transform:uppercase;color:var(--emerald);font-weight:600;
     padding:16px 18px;border-bottom:1px solid var(--line);background:var(--emerald-wash);
-    display:flex;align-items:flex-start;
   }
   .spec .v{
     padding:16px 20px;border-bottom:1px solid var(--line);font-size:15.5px;color:var(--ink-soft);
@@ -449,6 +448,86 @@
           </ul>
         </div>
       </div>
+
+      <h3>GraphQL in depth — how it actually works</h3>
+
+      <p>Every GraphQL request — query or mutation — is a single <code>POST</code> to one endpoint:</p>
+      <pre><code>POST https://{shop}.myshopify.com/admin/api/2026-04/graphql.json
+X-Shopify-Access-Token: {your_token}
+Content-Type: application/json</code></pre>
+
+      <p>The body carries a <code>query</code> string and optionally a <code>variables</code> map. Shopify resolves only the fields you asked for and returns them under a <code>data</code> key. Any server-side problems land in an <code>errors</code> array — the HTTP status can still be <code>200</code>, so <strong>always check <code>errors</code> in the response body</strong>, not just the status code.</p>
+
+      <h4>Queries vs mutations vs subscriptions</h4>
+      <div class="spec">
+        <div class="k">Query</div>
+        <div class="v"><p>Read-only fetch. Ask for exactly the fields you need — nothing more. Example: fetch an order with its line items and the <code>shopMoney</code> amounts only.</p></div>
+        <div class="k">Mutation</div>
+        <div class="v"><p>Write operation (create / update / delete). Returns the modified resource or a <code>userErrors</code> array on validation failure. Example: <code>fulfillmentCreate</code>, <code>inventoryAdjustQuantities</code>, <code>orderClose</code>.</p></div>
+        <div class="k">Subscription</div>
+        <div class="v"><p>Not used in server-to-server flows. Webhooks (§03) are the event mechanism for backend integrations.</p></div>
+      </div>
+
+      <h4>Pagination — cursor-based</h4>
+      <p>Shopify GraphQL uses cursor-based pagination. Every list field wraps results in a <strong>connection</strong> with <code>edges</code> / <code>node</code> and a <code>pageInfo</code> block:</p>
+      <pre><code><span class="k">query</span> {
+  orders(first: <span class="f">50</span>, after: <span class="s">"cursor_from_prev_page"</span>, query: <span class="s">"financial_status:paid"</span>) {
+    edges { node { <span class="f">id</span> <span class="f">name</span> <span class="f">createdAt</span> } }
+    pageInfo { <span class="f">hasNextPage</span> <span class="f">endCursor</span> }
+  }
+}</code></pre>
+      <p>When <code>hasNextPage</code> is <code>true</code>, pass <code>endCursor</code> as the next <code>after</code> argument. <strong>Never use offset-based counting</strong> — results are not stable across pages that way.</p>
+
+      <h4>Mutations and <code>userErrors</code></h4>
+      <pre><code><span class="k">mutation</span> FulfillOrder(<span class="f">$fulfillment</span>: FulfillmentInput!) {
+  fulfillmentCreate(fulfillment: <span class="f">$fulfillment</span>) {
+    fulfillment { <span class="f">id</span> <span class="f">status</span> <span class="f">trackingInfo</span> { <span class="f">number</span> <span class="f">url</span> } }
+    userErrors { <span class="f">field</span> <span class="f">message</span> }
+  }
+}</code></pre>
+      <p><code>userErrors</code> is non-null when Shopify accepts the HTTP request but rejects the business logic (e.g. order already fulfilled, invalid location). Always check it before treating a mutation as successful.</p>
+
+      <h4>Cost-based rate limiting (calculated query cost)</h4>
+      <p>Unlike REST's request-count bucket, GraphQL uses a <strong>point-cost system</strong>. Each field and connection depth adds to the cost of a query. The response extensions tell you exactly how much you spent:</p>
+      <pre><code><span class="c">// extensions block in every GraphQL response</span>
+"extensions": {
+  "cost": {
+    <span class="f">"requestedQueryCost"</span>: 42,
+    <span class="f">"actualQueryCost"</span>: 38,
+    <span class="f">"throttleStatus"</span>: {
+      <span class="f">"maximumAvailable"</span>: 2000,
+      <span class="f">"currentlyAvailable"</span>: 1962,
+      <span class="f">"restoreRate"</span>: 100
+    }
+  }
+}</code></pre>
+      <p>The bucket refills at <strong>100 points/second</strong> up to a maximum of 2 000. If <code>currentlyAvailable</code> drops to zero, Shopify returns a <code>THROTTLED</code> error. Back off and retry — do not hammer. In HotWax, the Moqui service that calls GraphQL should read <code>extensions.cost.throttleStatus</code> and insert a sleep when headroom is low.</p>
+
+      <h4>Bulk operations — for large data pulls</h4>
+      <p>When syncing a full catalog or large order history, individual queries hit cost limits fast. Shopify's <strong>Bulk Operations API</strong> is the right tool: you kick off an async <code>bulkOperationRunQuery</code> mutation, Shopify processes it server-side, and you download the result as a <code>.jsonl</code> file from a signed URL once the job finishes. HotWax uses this pattern for initial catalog imports from Shopify.</p>
+      <pre><code><span class="k">mutation</span> {
+  bulkOperationRunQuery(
+    query: <span class="s">"""
+    { products { edges { node { id title variants { edges { node { sku price } } } } } }
+    """</span>
+  ) {
+    bulkOperation { <span class="f">id</span> <span class="f">status</span> }
+    userErrors { <span class="f">field</span> <span class="f">message</span> }
+  }
+}</code></pre>
+      <p>Poll with <code>{ currentBulkOperation { id status url } }</code> until <code>status</code> is <code>COMPLETED</code>, then fetch the <code>url</code>. Each line of the <code>.jsonl</code> is one GraphQL node — parse with a streaming reader to avoid memory pressure.</p>
+
+      <h4>Key namespaces HotWax uses via GraphQL</h4>
+      <div class="spec">
+        <div class="k">Orders</div>
+        <div class="v"><p><code>orders</code> query + <code>order</code> by ID. Mutations: <code>orderClose</code>, <code>orderCancel</code>, <code>draftOrderComplete</code>. Fields to watch: <code>totalPriceSet.shopMoney</code> vs <code>presentmentMoney</code>, <code>lineItems.edges.node.id</code> (the <code>orderItemExternalId</code> stored in HotWax), <code>fulfillmentOrders</code>.</p></div>
+        <div class="k">Inventory</div>
+        <div class="v"><p><code>inventoryLevel</code> / <code>inventoryLevels</code>, <code>inventoryItem</code>. Mutations: <code>inventoryAdjustQuantities</code>, <code>inventorySetOnHandQuantities</code>. HotWax pushes ATP back to Shopify via these mutations after brokering.</p></div>
+        <div class="k">Fulfillments</div>
+        <div class="v"><p><code>fulfillmentCreate</code> mutation (with tracking numbers), <code>fulfillmentOrderAcceptCancellationRequest</code>. Used when HotWax marks a shipment as shipped and needs to update Shopify.</p></div>
+        <div class="k">Products</div>
+        <div class="v"><p><code>products</code> / <code>product</code> query, <code>productVariant</code>. Used for catalog sync — pulling title, description, images, variant SKUs, prices, and <code>metafields</code> into the HotWax MDM/PIM.</p></div>
+      </div>
     </section>
 
     <!-- ============ 3 ============ -->
@@ -513,6 +592,104 @@
             <li><strong>Delivery target</strong> — your own endpoint vs a managed queue/event-bus destination.</li>
           </ul>
         </div>
+      </div>
+
+      <h3>Webhooks in depth — subscription methods &amp; HotWax integration</h3>
+
+      <h4>Two ways to register subscriptions</h4>
+      <div class="spec">
+        <div class="k">App config file (TOML)</div>
+        <div class="v"><p>Declarative. Subscriptions live in <code>shopify.app.toml</code> under a <code>[webhooks]</code> block and are applied to every store that installs the app. Requires Shopify CLI ≥ 3.63. Best for standard, app-wide topics.</p>
+          <pre style="margin-top:8px"><code>[webhooks]
+api_version = "2026-04"
+
+[[webhooks.subscriptions]]
+topics = ["orders/create", "orders/updated", "orders/cancelled"]
+uri    = "https://api.yourco.com/hooks/shopify"
+
+[[webhooks.subscriptions]]
+topics = ["inventory_levels/update"]
+uri    = "pubsub://your-project:your-topic"</code></pre>
+        </div>
+        <div class="k">GraphQL mutation</div>
+        <div class="v"><p>Imperative, shop-specific. Use the <code>webhookSubscriptionCreate</code> mutation when you need per-shop control or topics not available in the config file.</p>
+          <pre style="margin-top:8px"><code><span class="k">mutation</span> webhookSubscriptionCreate(
+  <span class="f">$topic</span>: WebhookSubscriptionTopic!,
+  <span class="f">$webhookSubscription</span>: WebhookSubscriptionInput!
+) {
+  webhookSubscriptionCreate(
+    topic: <span class="f">$topic</span>,
+    webhookSubscription: <span class="f">$webhookSubscription</span>
+  ) {
+    webhookSubscription { <span class="f">id</span> <span class="f">topic</span> <span class="f">format</span> <span class="f">uri</span> }
+    userErrors { <span class="f">field</span> <span class="f">message</span> }
+  }
+}</code></pre>
+        </div>
+      </div>
+
+      <h4>Payload filtering &amp; field trimming</h4>
+      <p>Two customization tools Shopify provides that reduce noise in your handlers:</p>
+      <div class="spec">
+        <div class="k">Filter</div>
+        <div class="v"><p>A rule expression that gates delivery — Shopify only sends the webhook if the resource matches. Example: fire <code>products/update</code> only for active products in a specific product type. Configured via <code>filter</code> in the TOML subscription block.</p>
+          <pre style="margin-top:8px"><code>[[webhooks.subscriptions]]
+topics = ["products/update"]
+uri    = "https://api.yourco.com/hooks/product-update"
+filter = "status:active AND product_type:Apparel"</code></pre>
+        </div>
+        <div class="k">include_fields</div>
+        <div class="v"><p>Trims the payload to only the fields you declare. Reduces payload size and avoids processing data you'll discard anyway. Example: for customer deletes, you only need <code>id</code> and <code>email</code>.</p>
+          <pre style="margin-top:8px"><code>[[webhooks.subscriptions]]
+topics         = ["customers/delete"]
+uri            = "https://api.yourco.com/hooks/customer-delete"
+include_fields = ["id", "email"]</code></pre>
+        </div>
+      </div>
+
+      <h4>Key topics HotWax subscribes to</h4>
+      <div class="spec">
+        <div class="k"><code>orders/create</code></div>
+        <div class="v"><p>Primary trigger for order ingestion into HotWax OMS. The payload carries line items, customer, shipping address, <code>financial_status</code>, and <code>sales_channel</code>. HotWax maps this to a new <code>OrderHeader</code> + <code>OrderItem</code> + <code>OrderItemShipGroup</code>.</p></div>
+        <div class="k"><code>orders/updated</code></div>
+        <div class="v"><p>Fires on any field change to an order — edits, partial cancellations, address updates. HotWax re-fetches the order via GraphQL on receipt rather than trusting the potentially-stale webhook payload.</p></div>
+        <div class="k"><code>orders/cancelled</code></div>
+        <div class="v"><p>Triggers cancellation flow in HotWax — releases reserved inventory and updates <code>OrderStatus</code> to CANCELLED.</p></div>
+        <div class="k"><code>products/create</code> / <code>products/update</code></div>
+        <div class="v"><p>Keeps the HotWax product catalog in sync with Shopify. On update, HotWax re-syncs variant-level data (price, SKU, inventory policy) via the GraphQL <code>product</code> query.</p></div>
+        <div class="k"><code>inventory_levels/update</code></div>
+        <div class="v"><p>Used in scenarios where Shopify is the inventory source of truth (less common when HotWax owns ATP). Typically disabled or filtered to specific locations in HotWax-managed setups to avoid circular updates.</p></div>
+        <div class="k"><code>fulfillments/create</code></div>
+        <div class="v"><p>Fires when a fulfillment (with optional tracking) is created on Shopify's side. HotWax listens here if a 3PL updates Shopify directly, to reconcile <code>Shipment</code> and <code>ItemIssuance</code> records.</p></div>
+      </div>
+
+      <h4>Delivery reliability &amp; retries</h4>
+      <p>Shopify retries failed deliveries (non-2xx or timeout) with exponential backoff for up to <strong>48 hours</strong>. This means your handler <em>will</em> see duplicate events. The standard pattern in HotWax's Moqui services is:</p>
+      <ol>
+        <li>Acknowledge <code>200 OK</code> immediately (within 5 seconds).</li>
+        <li>Write the raw payload to a queue / <code>WebhookEvent</code> entity.</li>
+        <li>Abackground service picks it up, checks if the <code>id</code> was already processed (<code>X-Shopify-Webhook-Id</code> header), and skips if so.</li>
+        <li>Otherwise, run the business logic (order import, catalog update, etc.).</li>
+      </ol>
+
+      <h4>HMAC verification — mandatory</h4>
+      <p>Every Shopify webhook carries an <code>X-Shopify-Hmac-SHA256</code> header — a base64-encoded HMAC-SHA256 of the raw request body, keyed with your app's <strong>client secret</strong>. Verify it before processing:</p>
+      <pre><code><span class="c">// Groovy / Moqui equivalent logic</span>
+import javax.crypto.Mac
+import javax.crypto.spec.SecretKeySpec
+
+def rawBody    = request.inputStream.bytes
+def secret     = "your_client_secret"
+def mac        = Mac.getInstance("HmacSHA256")
+mac.init(new SecretKeySpec(secret.bytes, "HmacSHA256"))
+def computed   = mac.doFinal(rawBody).encodeBase64().toString()
+def shopifyHdr = request.getHeader("X-Shopify-Hmac-SHA256")
+
+if (computed != shopifyHdr) return [status: "error", message: "Invalid signature"]</code></pre>
+
+      <div class="note">
+        <span class="nt">HotWax pattern</span>
+        In practice, HotWax connectors run Shopify webhooks through a thin endpoint that does HMAC verification + enqueue, then returns <code>200</code>. The actual OMS work (creating orders, updating inventory) happens asynchronously in a Moqui service job — keeping the webhook handler fast and decoupled from OMS transaction time.
       </div>
     </section>
 
