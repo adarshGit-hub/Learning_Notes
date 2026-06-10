@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>fromDate & thruDate Analysis — HotWax Commerce OMS</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3250;
+    --accent: #6c8ef5;
+    --accent2: #a78bfa;
+    --green: #34d399;
+    --yellow: #fbbf24;
+    --red: #f87171;
+    --blue: #60a5fa;
+    --text: #e2e8f0;
+    --muted: #8892b0;
+    --code-bg: #141720;
+    --tag-pk: #1e3a5f;
+    --tag-pk-text: #60a5fa;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 15px; line-height: 1.7; }
+
+  /* LAYOUT */
+  .layout { display: flex; min-height: 100vh; }
+  .sidebar { width: 260px; background: var(--surface); border-right: 1px solid var(--border); padding: 24px 0; position: sticky; top: 0; height: 100vh; overflow-y: auto; flex-shrink: 0; }
+  .content { flex: 1; max-width: 960px; padding: 48px 40px; }
+
+  /* SIDEBAR */
+  .sidebar-logo { padding: 0 20px 20px; border-bottom: 1px solid var(--border); }
+  .sidebar-logo .badge { display: inline-block; background: var(--accent); color: #fff; font-size: 10px; font-weight: 700; letter-spacing: 1px; padding: 2px 8px; border-radius: 20px; margin-bottom: 8px; }
+  .sidebar-logo h2 { font-size: 13px; font-weight: 600; color: var(--text); line-height: 1.4; }
+  .nav-section { padding: 16px 20px 4px; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase; }
+  .nav-link { display: block; padding: 7px 20px; font-size: 13px; color: var(--muted); text-decoration: none; border-left: 3px solid transparent; transition: all .15s; }
+  .nav-link:hover { color: var(--text); background: var(--surface2); border-left-color: var(--accent); }
+  .nav-link.active { color: var(--accent); border-left-color: var(--accent); background: rgba(108,142,245,.08); }
+
+  /* HEADINGS */
+  h1 { font-size: 32px; font-weight: 800; line-height: 1.2; margin-bottom: 8px; background: linear-gradient(135deg, #6c8ef5, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .subtitle { color: var(--muted); font-size: 14px; margin-bottom: 40px; }
+  h2 { font-size: 22px; font-weight: 700; color: var(--text); margin: 48px 0 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+  h2 .part-badge { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; background: var(--accent); color: #fff; flex-shrink: 0; }
+  h3 { font-size: 17px; font-weight: 600; color: var(--accent); margin: 28px 0 12px; }
+  h4 { font-size: 14px; font-weight: 600; color: var(--accent2); margin: 20px 0 8px; }
+
+  /* TABLES */
+  .table-wrap { overflow-x: auto; margin: 14px 0; border-radius: 10px; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th { background: var(--surface2); color: var(--muted); font-weight: 600; font-size: 11px; letter-spacing: .5px; text-transform: uppercase; padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: rgba(108,142,245,.04); }
+  td { padding: 9px 14px; vertical-align: top; color: var(--text); }
+  td code { background: var(--code-bg); color: var(--accent); padding: 2px 6px; border-radius: 4px; font-size: 12px; font-family: 'Cascadia Code','Fira Code',monospace; }
+  td strong { color: var(--yellow); }
+  td em { color: var(--green); font-style: normal; font-weight: 500; }
+  .pk-yes { display: inline-block; background: var(--tag-pk); color: var(--tag-pk-text); border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 700; }
+  .pk-no { display: inline-block; background: #2a1f1f; color: #f87171; border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 700; }
+  .critical { color: var(--red); font-weight: 600; }
+  .star { color: var(--yellow); }
+
+  /* CALLOUT BOXES */
+  .callout { border-radius: 10px; padding: 14px 18px; margin: 16px 0; font-size: 13.5px; display: flex; gap: 12px; align-items: flex-start; }
+  .callout .icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+  .callout.important { background: rgba(251,191,36,.07); border: 1px solid rgba(251,191,36,.25); }
+  .callout.important .icon { color: var(--yellow); }
+  .callout.caution { background: rgba(248,113,113,.07); border: 1px solid rgba(248,113,113,.25); }
+  .callout.caution .icon { color: var(--red); }
+  .callout.tip { background: rgba(52,211,153,.07); border: 1px solid rgba(52,211,153,.25); }
+  .callout.tip .icon { color: var(--green); }
+  .callout.note { background: rgba(96,165,250,.07); border: 1px solid rgba(96,165,250,.25); }
+  .callout.note .icon { color: var(--blue); }
+  .callout p { color: var(--text); line-height: 1.6; }
+  .callout strong { color: inherit; }
+
+  /* CODE BLOCKS */
+  pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; overflow-x: auto; margin: 12px 0; }
+  pre code { font-family: 'Cascadia Code','Fira Code','Consolas',monospace; font-size: 12.5px; color: #cdd6f4; line-height: 1.7; }
+  .code-label { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: .5px; text-transform: uppercase; margin: 20px 0 4px; }
+
+  /* STEP FLOW */
+  .step-flow { display: flex; flex-direction: column; gap: 0; }
+  .step { display: flex; gap: 16px; }
+  .step-line { display: flex; flex-direction: column; align-items: center; }
+  .step-num { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; font-weight: 800; font-size: 13px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .step-connector { width: 2px; background: var(--border); flex: 1; min-height: 16px; margin: 4px 0; }
+  .step-body { flex: 1; padding-bottom: 28px; }
+  .step-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 10px; padding-top: 4px; }
+
+  /* PATTERN CARDS */
+  .pattern-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+  .pattern-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px; }
+  .pattern-card .p-title { font-size: 13px; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
+  .pattern-card .p-sub { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+
+  /* RULES */
+  .rules-list { list-style: none; display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }
+  .rules-list li { display: flex; gap: 10px; align-items: flex-start; font-size: 13.5px; }
+  .rules-list li::before { content: attr(data-n); background: var(--accent); color: #fff; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; flex-shrink: 0; margin-top: 2px; }
+
+  /* TAKEAWAYS */
+  .takeaways { display: flex; flex-direction: column; gap: 10px; margin: 16px 0; }
+  .takeaway { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 0 10px 10px 0; padding: 14px 18px; font-size: 13.5px; }
+  .takeaway .t-num { font-size: 11px; font-weight: 800; color: var(--accent); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+
+  /* SECTION DIVIDER */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+
+  /* TOC PILLS */
+  .toc-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 32px; }
+  .toc-pill { background: var(--surface); border: 1px solid var(--border); color: var(--muted); font-size: 12px; padding: 5px 14px; border-radius: 20px; text-decoration: none; transition: all .15s; }
+  .toc-pill:hover { color: var(--accent); border-color: var(--accent); background: rgba(108,142,245,.08); }
+
+  /* DOMAIN HEADER */
+  .domain-header { display: flex; align-items: center; gap: 10px; margin: 28px 0 12px; }
+  .domain-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+  .domain-label { font-size: 16px; font-weight: 700; color: var(--text); }
+
+  /* SCENARIO GRID */
+  .scenario-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0; }
+  .scenario-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+  .scenario-card .sc-num { font-size: 10px; font-weight: 800; color: var(--accent); letter-spacing: 1px; }
+  .scenario-card .sc-name { font-size: 13px; font-weight: 600; color: var(--text); margin: 2px 0; }
+  .scenario-card .sc-desc { font-size: 12px; color: var(--muted); }
+
+  @media(max-width:900px){ .layout{flex-direction:column;} .sidebar{width:100%;height:auto;position:static;} .content{padding:28px 18px;} .pattern-grid,.scenario-grid{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+<div class="layout">
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="badge">HotWax OMS</div>
+    <h2>fromDate & thruDate<br>Analysis</h2>
+  </div>
+  <div class="nav-section">Contents</div>
+  <a class="nav-link" href="#part0">Part 0 — Scenarios</a>
+  <a class="nav-link" href="#part1">Part 1 — Data Creation</a>
+  <a class="nav-link" href="#part2">Part 2 — Entity List</a>
+  <a class="nav-link" href="#part3">Part 3 — Impact</a>
+  <a class="nav-link" href="#part4">Part 4 — Fetching</a>
+  <a class="nav-link" href="#takeaways">Key Takeaways</a>
+</nav>
+
+<!-- MAIN CONTENT -->
+<main class="content">
+
+  <h1>fromDate &amp; thruDate Analysis</h1>
+  <div class="subtitle">HotWax Commerce OMS · Temporal Data Pattern Deep-Dive</div>
+
+  <div class="toc-pills">
+    <a href="#part0" class="toc-pill">Part 0: Scenarios</a>
+    <a href="#part1" class="toc-pill">Part 1: Data Flows</a>
+    <a href="#part2" class="toc-pill">Part 2: Entity List</a>
+    <a href="#part3" class="toc-pill">Part 3: Impact</a>
+    <a href="#part4" class="toc-pill">Part 4: Code Patterns</a>
+    <a href="#takeaways" class="toc-pill">Key Takeaways</a>
+  </div>
+
+  <!-- PART 0 -->
+  <section id="part0">
+    <h2><span class="part-badge">Part 0</span> All Scenarios Overview</h2>
+
+    <h3>A. Order Scenarios</h3>
+    <div class="scenario-grid">
+      <div class="scenario-card"><div class="sc-num">01</div><div class="sc-name">Online Delivery — No Adjustments</div><div class="sc-desc">Simple shipping order, no discounts/taxes</div></div>
+      <div class="scenario-card"><div class="sc-num">02</div><div class="sc-name">Online Delivery — Full Charges</div><div class="sc-desc">Shipping charges, discount codes, sales tax</div></div>
+      <div class="scenario-card"><div class="sc-num">03</div><div class="sc-name">Online Delivery — Unfulfilled, Address Added</div><div class="sc-desc">Created status, discount + tax, address added later</div></div>
+      <div class="scenario-card"><div class="sc-num">04</div><div class="sc-name">Online Delivery — Unfulfilled (v2)</div><div class="sc-desc">Variant of #3 with different address flow</div></div>
+      <div class="scenario-card"><div class="sc-num">05</div><div class="sc-name">Mixed Cart — No Adjustments</div><div class="sc-desc">Shipping + pickup items, no charges</div></div>
+      <div class="scenario-card"><div class="sc-num">06</div><div class="sc-name">Mixed Cart — Full Charges</div><div class="sc-desc">Mixed cart with shipping, discounts, taxes</div></div>
+      <div class="scenario-card"><div class="sc-num">07</div><div class="sc-name">Mixed Cart — Multiple Pickup Locations</div><div class="sc-desc">Items picked up from different stores</div></div>
+      <div class="scenario-card"><div class="sc-num">08–09</div><div class="sc-name">Mixed Cart — Full Charges / Multiple Status</div><div class="sc-desc">All charge types; some items completed, some created</div></div>
+      <div class="scenario-card"><div class="sc-num">10</div><div class="sc-name">Online Pickup Order — No Adjustments</div><div class="sc-desc">Pure BOPIS order</div></div>
+      <div class="scenario-card"><div class="sc-num">11–12</div><div class="sc-name">All Items Removed / Gift Card Items</div><div class="sc-desc">Full cancellation; DIGITAL_GOOD gift card items</div></div>
+      <div class="scenario-card"><div class="sc-num">13–14</div><div class="sc-name">POS Completed — With/No Adjustments</div><div class="sc-desc">In-store sale, auto-completed</div></div>
+      <div class="scenario-card"><div class="sc-num">15–18</div><div class="sc-name">POS Send Sale Variants</div><div class="sc-desc">No adj, cancelled, partial cancel, mixed cart</div></div>
+    </div>
+
+    <h3>B. Return Scenarios</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Scenario</th><th>Key Characteristic</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Web order, Normal Return With Restock</td><td><code>restockType: RETURN</code> — inventory goes back</td></tr>
+          <tr><td>2</td><td>Web order, Fulfilled Item Refund, No Restock</td><td><code>restockType: NO_RESTOCK</code></td></tr>
+          <tr><td>3–4</td><td>Unfulfilled Item/Order Cancelled, No Restock</td><td>Unfulfilled items refunded</td></tr>
+          <tr><td>5–6</td><td>Unfulfilled Order Cancelled With/No Restock</td><td>Full cancel with or without inventory restock</td></tr>
+          <tr><td>7</td><td>Return with Restocking Fees</td><td>Fee deducted from refund</td></tr>
+          <tr><td>8</td><td>Appeasement — Refund Only</td><td>No physical return</td></tr>
+          <tr><td>9</td><td>SendSale Unfulfilled Cancel + Shipping Refund</td><td>Send sale cancellation flow</td></tr>
+          <tr><td>10–12</td><td>POS Gift Card / POS Return/Refund on Web</td><td>NO_RESTOCK / RETURN</td></tr>
+          <tr><td>13–21</td><td>POS/Web Exchanges (Equal/Lesser/Greater)</td><td>Multiple exchange scenarios</td></tr>
+          <tr><td>22</td><td>POS Partially Paid Instant Refund</td><td><code>restockType: RETURN</code></td></tr>
+          <tr><td>23–28</td><td>Web Exchanges / Loop RMS Integration</td><td>Web-initiated + Loop flows</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- PART 1 -->
+  <section id="part1">
+    <h2><span class="part-badge">Part 1</span> Step-by-Step Data Creation</h2>
+
+    <h3>Flow 1: Online Delivery Order (Full Charges)</h3>
+    <div class="callout important"><div class="icon">⭐</div><p>Entities marked <strong>⭐</strong> have <code>fromDate</code> &amp; <code>thruDate</code> fields — these are the temporal entities where the pattern applies.</p></div>
+
+    <div class="step-flow">
+      <!-- STEP 1 -->
+      <div class="step">
+        <div class="step-line"><div class="step-num">1</div><div class="step-connector"></div></div>
+        <div class="step-body">
+          <div class="step-title">Order Import from Shopify</div>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:10px;">When <code>Import Orders</code> job runs → <code>prepareTransformedShopifyOrderPayload.groovy</code></p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Entity</th><th>Op</th><th>Key Data</th></tr></thead>
+              <tbody>
+                <tr><td><code>OrderHeader</code></td><td><em>INSERT</em></td><td>orderId, externalId, statusId=ORDER_CREATED, grandTotal</td></tr>
+                <tr><td><code>OrderStatus</code></td><td><em>INSERT</em></td><td>statusId=ORDER_CREATED, statusDatetime</td></tr>
+                <tr><td><code>OrderItem</code></td><td><em>INSERT</em></td><td>per line item — productId, quantity, unitPrice</td></tr>
+                <tr><td><code>OrderItemShipGroup</code></td><td><em>INSERT</em></td><td>facilityId, shipmentMethodTypeId, carrierPartyId</td></tr>
+                <tr><td><code>OrderItemShipGroupAssoc</code></td><td><em>INSERT</em></td><td>quantity linkage</td></tr>
+                <tr><td><code>OrderContactMech</code></td><td><em>INSERT</em></td><td>shipping address, contactMechPurposeTypeId</td></tr>
+                <tr><td><code>OrderAdjustment</code></td><td><em>INSERT</em></td><td>SHIPPING_CHARGES, SALES_TAX, EXT_PROMO_ADJUSTMENT</td></tr>
+                <tr><td><span class="star">⭐</span> <code>OrderIdentification</code></td><td><em>INSERT</em></td><td>SHOPIFY_ORD_ID/NAME/NO, idValue, <strong>fromDate=now</strong></td></tr>
+                <tr><td><span class="star">⭐</span> <code>OrderRole</code></td><td><em>INSERT</em></td><td>BILL_TO_CUSTOMER, SHIP_TO_CUSTOMER, <strong>fromDate=now</strong></td></tr>
+                <tr><td><code>OrderPaymentPreference</code></td><td><em>INSERT</em></td><td>paymentMethodTypeId, maxAmount</td></tr>
+                <tr><td><span class="star">⭐</span> <code>PartyContactMech</code></td><td><em>INSERT</em></td><td>partyId, contactMechId, <strong>fromDate=now</strong></td></tr>
+                <tr><td><code>ContactMech / PostalAddress</code></td><td><em>INSERT</em></td><td>contactMechId, address details</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2 -->
+      <div class="step">
+        <div class="step-line"><div class="step-num">2</div><div class="step-connector"></div></div>
+        <div class="step-body">
+          <div class="step-title">Order Approval</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Entity</th><th>Op</th><th>Key Data</th></tr></thead>
+              <tbody>
+                <tr><td><code>OrderHeader</code></td><td><strong>UPDATE</strong></td><td>statusId → ORDER_APPROVED</td></tr>
+                <tr><td><code>OrderStatus</code></td><td><em>INSERT</em></td><td>statusId=ORDER_APPROVED, statusDatetime</td></tr>
+                <tr><td><code>OrderItem</code></td><td><strong>UPDATE</strong></td><td>statusId → ITEM_APPROVED</td></tr>
+                <tr><td><code>OrderStatus</code></td><td><em>INSERT</em></td><td>per item: statusId=ITEM_APPROVED</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 3 -->
+      <div class="step">
+        <div class="step-line"><div class="step-num">3</div><div class="step-connector"></div></div>
+        <div class="step-body">
+          <div class="step-title">Brokering / Inventory Allocation</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Entity</th><th>Op</th><th>Key Data</th></tr></thead>
+              <tbody>
+                <tr><td><code>OrderItemShipGroup</code></td><td><em>INSERT/UPDATE</em></td><td>new ship group if facility changes</td></tr>
+                <tr><td><code>OrderFacilityChange</code></td><td><em>INSERT</em></td><td>routing history log</td></tr>
+                <tr><td><code>FacilityOrderCount</code></td><td><em>INSERT/UPDATE</em></td><td>daily order count for facility</td></tr>
+                <tr><td><code>OrderItemShipGrpInvRes</code></td><td><em>INSERT</em></td><td>inventory reservation record</td></tr>
+                <tr><td><code>InventoryItemDetail</code></td><td><em>INSERT</em></td><td>ATP diff = −quantity</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 4 -->
+      <div class="step">
+        <div class="step-line"><div class="step-num">4</div><div class="step-connector"></div></div>
+        <div class="step-body">
+          <div class="step-title">Store Fulfillment (Pack &amp; Ship)</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Entity</th><th>Op</th><th>Key Data</th></tr></thead>
+              <tbody>
+                <tr><td><code>Shipment</code></td><td><em>INSERT</em></td><td>shipmentId, statusId, originFacilityId</td></tr>
+                <tr><td><code>ShipmentItem</code></td><td><em>INSERT</em></td><td>shipmentId, productId, quantity</td></tr>
+                <tr><td><code>ShipmentRouteSegment</code></td><td><em>INSERT</em></td><td>trackingIdNumber, carrierPartyId</td></tr>
+                <tr><td><code>ShipmentStatus</code></td><td><em>INSERT</em></td><td>statusId=SHIPMENT_SHIPPED</td></tr>
+                <tr><td><code>OrderItem</code></td><td><strong>UPDATE</strong></td><td>statusId → ITEM_COMPLETED</td></tr>
+                <tr><td><code>OrderHeader</code></td><td><strong>UPDATE</strong></td><td>statusId → ORDER_COMPLETED</td></tr>
+                <tr><td><code>InventoryItemDetail</code></td><td><em>INSERT</em></td><td>QOH diff = −quantity (stock leaves)</td></tr>
+                <tr><td><span class="star">⭐</span> <code>ShipmentContent</code></td><td><em>INSERT</em></td><td>contentId, <strong>fromDate=now</strong> (shipping label)</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 5 -->
+      <div class="step">
+        <div class="step-line"><div class="step-num">5</div></div>
+        <div class="step-body">
+          <div class="step-title">Address Added Later (Unfulfilled Scenario)</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Entity</th><th>Op</th><th>Key Data</th></tr></thead>
+              <tbody>
+                <tr><td><code>ContactMech / PostalAddress</code></td><td><em>INSERT</em></td><td>new contactMechId</td></tr>
+                <tr><td><span class="star">⭐</span> <code>PartyContactMech</code> (old)</td><td><strong>UPDATE</strong></td><td><strong>thruDate=now</strong> ← expire old record</td></tr>
+                <tr><td><span class="star">⭐</span> <code>PartyContactMech</code> (new)</td><td><em>INSERT</em></td><td>partyId, contactMechId, <strong>fromDate=now</strong></td></tr>
+                <tr><td><code>OrderContactMech</code></td><td><strong>UPDATE</strong></td><td>new contactMechId</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div><!-- /step-flow -->
+
+    <h3>Flow 2: POS Completed Order</h3>
+    <p style="font-size:13.5px;margin-bottom:10px;">POS orders arrive as already-completed:</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Entity</th><th>Op</th><th>Key Data</th></tr></thead>
+        <tbody>
+          <tr><td><code>OrderHeader</code></td><td><em>INSERT</em></td><td>statusId=ORDER_COMPLETED, salesChannelEnumId=POS_CHANNEL</td></tr>
+          <tr><td><code>OrderStatus</code></td><td><em>INSERT</em></td><td>ORDER_COMPLETED</td></tr>
+          <tr><td><code>OrderItem</code></td><td><em>INSERT</em></td><td>statusId=ITEM_COMPLETED</td></tr>
+          <tr><td colspan="3" style="color:var(--muted);font-style:italic;">All other entities same as online order import but with <code>shipmentMethodTypeId=POS_COMPLETED</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Flow 3: Return (Normal Return with Restock)</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Entity</th><th>Op</th><th>Key Data</th></tr></thead>
+        <tbody>
+          <tr><td><code>ReturnHeader</code></td><td><em>INSERT</em></td><td>returnId, statusId=RETURN_REQUESTED, returnChannelEnumId</td></tr>
+          <tr><td><code>ReturnItem</code></td><td><em>INSERT</em></td><td>per item — productId, returnQuantity, returnPrice</td></tr>
+          <tr><td><code>ReturnStatus</code></td><td><em>INSERT</em></td><td>statusId=RETURN_REQUESTED</td></tr>
+          <tr><td><span class="star">⭐</span> <code>ReturnIdentification</code></td><td><em>INSERT</em></td><td>SHOPIFY_RTN_ID, idValue, <strong>fromDate=now</strong></td></tr>
+          <tr><td colspan="3" style="color:var(--accent);font-weight:600;font-size:12px;">↓ When completed (restockType=RETURN)</td></tr>
+          <tr><td><code>ReturnItem</code></td><td><strong>UPDATE</strong></td><td>statusId → RETURN_COMPLETED, expectedItemStatus=INV_RETURNED</td></tr>
+          <tr><td><code>ReturnAdjustment</code></td><td><em>INSERT</em></td><td>taxes, shipping refund, discount adjustments</td></tr>
+          <tr><td><code>ReturnItemResponse</code></td><td><em>INSERT</em></td><td>orderPaymentPreferenceId (refund link)</td></tr>
+          <tr><td><code>InventoryItemDetail</code></td><td><em>INSERT</em></td><td>QOH/ATP diff = +quantity (inventory restocked)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Flow 4: Exchange (POS Equal Exchange)</h3>
+    <p style="font-size:13.5px;margin-bottom:10px;">All return flow entities <strong>plus</strong>:</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Entity</th><th>Op</th><th>Key Data</th></tr></thead>
+        <tbody>
+          <tr><td>New <code>OrderHeader</code></td><td><em>INSERT</em></td><td>exchange order, linked to original</td></tr>
+          <tr><td>New <code>OrderItem</code></td><td><em>INSERT</em></td><td>exchanged product</td></tr>
+          <tr><td><code>OrderPaymentPreference</code></td><td><em>INSERT</em></td><td>EXCHANGE_CREDIT or EXCHANGE_PAYMENT</td></tr>
+          <tr><td><code>ReturnItemResponse</code></td><td><strong>UPDATE</strong></td><td>replacementOrderId linked</td></tr>
+          <tr><td><code>CommunicationEvent</code></td><td><em>INSERT</em></td><td>original order reference note</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- PART 2 -->
+  <section id="part2">
+    <h2><span class="part-badge">Part 2 · T-1</span> Entities with fromDate &amp; thruDate</h2>
+    <div class="callout note"><div class="icon">📌</div><p><strong>PK</strong> = <code>fromDate</code> is part of the Primary Key (composite key pattern).<br><strong>Non-PK</strong> = <code>fromDate</code> is a regular field.</p></div>
+
+    <!-- Order Domain -->
+    <div class="domain-header"><div class="domain-icon" style="background:rgba(108,142,245,.15)">📦</div><div class="domain-label">Order Domain</div></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Entity</th><th style="text-align:center">PK?</th><th>Relevance</th></tr></thead>
+        <tbody>
+          <tr><td><code>OrderContent</code></td><td style="text-align:center"><span class="pk-yes">✅ PK</span></td><td>Content attached to orders</td></tr>
+          <tr><td><code>OrderIdentification</code></td><td style="text-align:center"><span class="pk-yes">✅ PK</span></td><td><span class="critical">CRITICAL</span> — Maps SHOPIFY_ORD_ID to internal orderId</td></tr>
+          <tr><td><code>OrderRole</code></td><td style="text-align:center"><span class="pk-yes">✅ PK</span></td><td><span class="critical">CRITICAL</span> — Party roles: BILL_TO_CUSTOMER, SHIP_TO_CUSTOMER</td></tr>
+          <tr><td><code>ExcludedOrderFacility</code></td><td style="text-align:center"><span class="pk-yes">✅ PK</span></td><td>Facilities excluded from brokering for order items</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Return Domain -->
+    <div class="domain-header"><div class="domain-icon" style="background:rgba(248,113,113,.15)">↩️</div><div class="domain-label">Return Domain</div></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Entity</th><th style="text-align:center">PK?</th><th>Relevance</th></tr></thead>
+        <tbody>
+          <tr><td><code>ReturnIdentification</code></td><td style="text-align:center"><span class="pk-yes">✅ PK</span></td><td><span class="critical">CRITICAL</span> — Maps SHOPIFY_RTN_ID to internal returnId</td></tr>
+          <tr><td><code>ReturnTypeReasonGrpMember</code></td><td style="text-align:center"><span class="pk-yes">✅ PK</span></td><td>Reason groups for returns</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Product Domain -->
+    <div class="domain-header"><div class="domain-icon" style="background:rgba(52,211,153,.15)">🏷️</div><div class="domain-label">Product Domain</div></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Entity</th><th style="text-align:center">PK?</th><th>Relevance</th></tr></thead>
+        <tbody>
+          <tr><td><code>GoodIdentification</code></td><td style="text-align:center"><span class="pk-yes">✅ PK</span></td><td><span class="critical">CRITICAL</span> — Maps SKU/UPC to productId. Used in order import &amp; returns</td></tr>
+          <tr><td><code>ProdCatalogCategory</code></td><td style="text-align:center"><span class="pk-yes">✅ PK</span></td><td><span class="critical">CRITICAL</span> — Links catalogs to categories (pre-order/backorder detection)</td></tr>
+          <tr><td><code>ProductAssoc</code></td><td style="text-align:center"><span class="pk-yes">✅ PK</span></td><td><span class="critical">CRITICAL</span> — Product relationships, PRODUCT_COMPONENT for marketing packages</td></tr>
+          <tr><td><code>ProductCategoryMember</code></td><td style="text-align:center"><span class="pk-yes">✅ PK</span></td><td>Product-to-category membership</td></tr>
+          <tr><td><code>ProductCategoryRollup</code></td><td style="text-align:center"><span class="pk-yes">✅ PK</span></td><td>Category hierarchy</td></tr>
+          <tr><td><code>ProductFeatureAppl</code></td><td style="text-align:center"><span class="pk-yes">✅ PK</span></td><td>Feature applications (size, color) on products</td></tr>
+          <tr><td><code>ProductPrice</code></td><td style="text-align:center"><span class="pk-yes">✅ PK</span></td><td>Product pricing by type, purpose, currency, date range</td></tr>
+          <tr><td><code>ProductStoreCatalog</code></td><td style="text-align:center"><span class="pk-yes">✅ PK</span></td><td>Links store to catalog</td></tr>
+          <tr><td><code>ProductStoreFacility</code></td><td style="text-align:center"><span class="pk-yes">✅ PK</span></td><td><span class="critical">CRITICAL</span> — Which facilities belong to which store</td></tr>
+          <tr><td><code>ProductStoreRole</code></td><td style="text-align:center"><span class="pk-yes">✅ PK</span></td><td>Party roles on stores</td></tr>
+          <tr><td><code>ProductStoreFacilityGroup</code></td><td style="text-align:center"><span class="pk-yes">✅ PK</span></td><td>Facility groups for stores</td></tr>
+          <tr><td><code>ProductAverageCost</code></td><td style="text-align:center"><span class="pk-yes">✅ PK</span></td><td>Average cost tracking</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Facility Domain -->
+    <div class="domain-header"><div class="domain-icon" style="background:rgba(251,191,36,.15)">🏪</div><div class="domain-label">Facility Domain</div></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Entity</th><th style="text-align:center">PK?</th><th>Relevance</th></tr></thead>
+        <tbody>
+          <tr><td><code>FacilityCalendar</code></td><td style="text-align:center"><span class="pk-yes">✅ PK</span></td><td>Operating calendars for facilities</td></tr>
+          <tr><td><code>FacilityContactMech</code></td><td style="text-align:center"><span class="pk-yes">✅ PK</span></td><td><span class="critical">CRITICAL</span> — Facility addresses for ship-from in orders</td></tr>
+          <tr><td><code>FacilityContactMechPurpose</code></td><td style="text-align:center"><span class="pk-yes">✅ PK</span></td><td>Purpose of facility contact info</td></tr>
+          <tr><td><code>FacilityGroupMember</code></td><td style="text-align:center"><span class="pk-yes">✅ PK</span></td><td>Facility-to-group membership</td></tr>
+          <tr><td><code>FacilityIdentification</code></td><td style="text-align:center"><span class="pk-yes">✅ PK</span></td><td>External IDs for facilities</td></tr>
+          <tr><td><code>FacilityParty</code></td><td style="text-align:center"><span class="pk-yes">✅ PK</span></td><td>Party roles on facilities</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Party Domain -->
+    <div class="domain-header"><div class="domain-icon" style="background:rgba(167,139,250,.15)">👤</div><div class="domain-label">Party Domain</div></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Entity</th><th style="text-align:center">PK?</th><th>Relevance</th></tr></thead>
+        <tbody>
+          <tr><td><code>PartyContactMech</code></td><td style="text-align:center"><span class="pk-yes">✅ PK</span></td><td><span class="critical">CRITICAL</span> — Customer addresses/emails/phones. Expired when address changes</td></tr>
+          <tr><td><code>PartyContactMechPurpose</code></td><td style="text-align:center"><span class="pk-yes">✅ PK</span></td><td>Purpose of party contact info</td></tr>
+          <tr><td><code>PartyCarrierAccount</code></td><td style="text-align:center"><span class="pk-yes">✅ PK</span></td><td>Carrier accounts for parties</td></tr>
+          <tr><td><code>PartyClassification</code></td><td style="text-align:center"><span class="pk-yes">✅ PK</span></td><td>Customer segments/classifications</td></tr>
+          <tr><td><code>PartyRelationship</code></td><td style="text-align:center"><span class="pk-yes">✅ PK</span></td><td>Relationships between parties</td></tr>
+          <tr><td><code>CommunicationEventRole</code></td><td style="text-align:center"><span class="pk-yes">✅ PK</span></td><td>Roles on communication events</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Security Domain -->
+    <div class="domain-header"><div class="domain-icon" style="background:rgba(248,113,113,.12)">🔐</div><div class="domain-label">Security Domain</div></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Entity</th><th style="text-align:center">PK?</th><th>Relevance</th></tr></thead>
+        <tbody>
+          <tr><td><code>UserLoginSecurityGroup</code></td><td style="text-align:center"><span class="pk-yes">✅ PK</span></td><td>User security group membership</td></tr>
+          <tr><td><code>SecurityGroupPermission</code></td><td style="text-align:center"><span class="pk-yes">✅ PK</span></td><td>Permissions for security groups</td></tr>
+          <tr><td><code>UserLoginPasswordHistory</code></td><td style="text-align:center"><span class="pk-yes">✅ PK</span></td><td>Password change history</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Shipment + Other -->
+    <div class="domain-header"><div class="domain-icon" style="background:rgba(96,165,250,.12)">🚚</div><div class="domain-label">Shipment &amp; Other</div></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Entity</th><th style="text-align:center">PK?</th><th>Relevance</th></tr></thead>
+        <tbody>
+          <tr><td><code>ShipmentContent</code></td><td style="text-align:center"><span class="pk-yes">✅ PK</span></td><td>Content attached to shipments (e.g., labels)</td></tr>
+          <tr><td><code>PicklistRole</code></td><td style="text-align:center"><span class="pk-yes">✅ PK</span></td><td>Party roles on picklists</td></tr>
+          <tr><td><code>DataManagerMapping</code></td><td style="text-align:center"><span class="pk-no">❌ Non-PK</span></td><td>Data mapping configuration</td></tr>
+          <tr><td><code>ShopifyShopScript</code></td><td style="text-align:center"><span class="pk-no">❌ Non-PK</span></td><td>Shopify scripts</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- PART 3 -->
+  <section id="part3">
+    <h2><span class="part-badge">Part 3 · T-1</span> Impact on Datamodel &amp; Business Processes</h2>
+
+    <div class="callout important"><div class="icon">⚠️</div><p>The <code>fromDate</code>/<code>thruDate</code> pattern implements <strong>temporal versioning</strong>. Instead of updating a record in-place (losing history), a new record is created with a new <code>fromDate</code>, and the old record's <code>thruDate</code> is set to "now". This preserves <strong>full audit history</strong> of every change.</p></div>
+
+    <h3>Pattern Rules</h3>
+    <ul class="rules-list">
+      <li data-n="1"><strong><code>fromDate</code> as PK</strong> → The entity supports <strong>multiple concurrent valid records</strong> for the same logical relationship, differentiated by time</li>
+      <li data-n="2"><strong><code>thruDate = NULL</code></strong> → Record is <strong>currently active/valid</strong></li>
+      <li data-n="3"><strong><code>thruDate = &lt;timestamp&gt;</code></strong> → Record was <strong>expired/superseded</strong> at that time</li>
+      <li data-n="4"><strong>New record</strong> → A new row with <code>fromDate = now</code> and <code>thruDate = NULL</code> replaces the old active record</li>
+    </ul>
+
+    <h3>How This Changes Business Processes</h3>
+
+    <h4>1. Order Identification Lookup</h4>
+    <p style="font-size:13.5px;margin-bottom:8px;">When system needs to find an order by its Shopify ID:</p>
+    <div class="table-wrap"><table><thead><tr><th>Without Date Filter</th><th>With Date Filter</th></tr></thead><tbody><tr><td style="color:var(--red)">Returns expired/old mappings if a Shopify order ID was remapped</td><td style="color:var(--green)">Returns only the current valid mapping</td></tr></tbody></table></div>
+
+    <h4>2. Product SKU Lookup (GoodIdentification)</h4>
+    <p style="font-size:13.5px;">A product's SKU can change over time — new <code>GoodIdentification</code> row inserted, old one expired. Must filter by date to get the <strong>current</strong> SKU→productId mapping.</p>
+
+    <h4>3. Customer Address Changes (PartyContactMech)</h4>
+    <p style="font-size:13.5px;">When a customer updates their address: old <code>PartyContactMech</code> gets <code>thruDate = now</code>, new one inserted with <code>fromDate = now</code>. Ship-to resolution must use date filter to get the current address.</p>
+
+    <h4>4. Facility-Store Mapping (ProductStoreFacility)</h4>
+    <p style="font-size:13.5px;">When a facility is added/removed from a store, old mapping gets expired. During brokering, only currently-active facilities should be considered.</p>
+
+    <h4>5. Product Category Membership</h4>
+    <p style="font-size:13.5px;">Pre-order/backorder detection relies on category membership. A product can be moved in/out of pre-order category — must check <em>current</em> membership, not historical.</p>
+  </section>
+
+  <hr class="divider">
+
+  <!-- PART 4 -->
+  <section id="part4">
+    <h2><span class="part-badge">Part 4 · T-2</span> User Actions &amp; Correct Data Fetching</h2>
+
+    <h3>When does a user action create a NEW record in a temporal entity?</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>User Action</th><th>Entity Affected</th><th>What Happens</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Customer changes address/phone/email</strong></td><td><code>PartyContactMech</code></td><td>Old: thruDate=now → New: fromDate=now</td></tr>
+          <tr><td><strong>Admin changes facility address</strong></td><td><code>FacilityContactMech</code></td><td>Old expired, new created</td></tr>
+          <tr><td><strong>SKU/UPC updated for a product</strong></td><td><code>GoodIdentification</code></td><td>Old SKU mapping expired, new one created</td></tr>
+          <tr><td><strong>Product price changed</strong></td><td><code>ProductPrice</code></td><td>Old price expired, new price with fromDate=now</td></tr>
+          <tr><td><strong>Product moved to pre-order category</strong></td><td><code>ProductCategoryMember</code></td><td>New membership with fromDate=now</td></tr>
+          <tr><td><strong>Product removed from pre-order category</strong></td><td><code>ProductCategoryMember</code></td><td>thruDate=now on existing record</td></tr>
+          <tr><td><strong>Facility added to store</strong></td><td><code>ProductStoreFacility</code></td><td>New record: fromDate=now</td></tr>
+          <tr><td><strong>Facility removed from store</strong></td><td><code>ProductStoreFacility</code></td><td>thruDate=now on existing</td></tr>
+          <tr><td><strong>Return re-identified</strong></td><td><code>ReturnIdentification</code></td><td>Old expired, new created</td></tr>
+          <tr><td><strong>Order re-identified</strong></td><td><code>OrderIdentification</code></td><td>Old expired, new created</td></tr>
+          <tr><td><strong>Facility added/removed from group</strong></td><td><code>FacilityGroupMember</code></td><td>Temporal create/expire</td></tr>
+          <tr><td><strong>Product variant association changed</strong></td><td><code>ProductAssoc</code></td><td>Old expired, new created</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Code Patterns for Correct Date-Filtered Fetching</h3>
+    <p style="font-size:13.5px;margin-bottom:16px;">The codebase uses <strong>two primary patterns</strong> to ensure only current (non-expired) records are fetched:</p>
+
+    <div class="pattern-grid">
+      <div class="pattern-card">
+        <div class="p-title">Pattern 1: filterByDate()</div>
+        <div class="p-sub">Post-query in-memory filter</div>
+        <pre><code>.list()
+.filterByDate(
+  "fromDate",
+  "thruDate",
+  ec.user.nowTimestamp
+)</code></pre>
+      </div>
+      <div class="pattern-card">
+        <div class="p-title">Pattern 2: conditionDate()</div>
+        <div class="p-sub">Query-level DB filter (preferred for large datasets)</div>
+        <pre><code>.conditionDate(
+  "fromDate",
+  "thruDate",
+  null  // null = now
+)
+.list()</code></pre>
+      </div>
+    </div>
+
+    <h4>Pattern 1 — Real Examples</h4>
+    <div class="code-label">1. ReturnIdentification lookup by Shopify ID</div>
+    <pre><code>// File: createShopifyInProgressReturn.groovy:42
+List&lt;Map&gt; returnIdentifications = ec.entity
+    .find("co.hotwax.order.return.ReturnIdentification")
+    .condition([returnIdentificationTypeId: "SHOPIFY_RTN_ID",
+                idValue: shopifyReturnId])
+    .list().filterByDate("fromDate", "thruDate", nowTs)</code></pre>
+
+    <div class="code-label">2. GoodIdentification — resolve product from SKU</div>
+    <pre><code>// File: createShopifyInProgressReturn.groovy:172
+List fallbackProductIds = ec.entity
+    .find("org.apache.ofbiz.product.product.GoodIdentification")
+    .condition([goodIdentificationTypeId: "SKU", idValue: sku])
+    .list().filterByDate("fromDate", "thruDate", nowTs)</code></pre>
+
+    <div class="code-label">3. ProdCatalogCategory — pre-order detection</div>
+    <pre><code>// File: prepareTransformedShopifyOrderPayload.groovy:640
+def prodCatalogCategories = ec.entity
+    .find("org.apache.ofbiz.product.catalog.ProdCatalogCategory")
+    .condition("prodCatalogId", productCatalogId)
+    .condition("prodCatalogCategoryTypeId", categoryTypeId)
+    .useCache(true).list()
+    .filterByDate("fromDate", "thruDate", ec.user.nowTimestamp)</code></pre>
+
+    <h4>Pattern 2 — Real Examples</h4>
+    <div class="code-label">1. ProductAssoc — marketing package components during return restocking</div>
+    <pre><code>// File: createShopifyCompletedReturn.groovy:286
+List&lt;Map&gt; productAssocs = ec.entity
+    .find("org.apache.ofbiz.product.product.ProductAssocAndFrom")
+    .condition([productId: productId,
+                productTypeId: "MARKETING_PKG_PICK",
+                productAssocTypeId: "PRODUCT_COMPONENT"])
+    .conditionDate("fromDate", "thruDate", null)
+    .selectField("productIdTo,quantity")
+    .list()</code></pre>
+
+    <div class="code-label">2. SecurityGroupPermission — login authorization check</div>
+    <pre><code>// File: OfbizShiroRealm.groovy:191
+.conditionDate("fromDate", "thruDate",
+               eci.user.getNowTimestamp())
+.disableAuthz().orderBy("-fromDate").list()</code></pre>
+
+    <div class="code-label">3. ProductFeatureAppl — PDF template data lookup</div>
+    <pre><code>// File: PdfTemplateData.xml:108
+ec.entity.find("co.hotwax.product.feature.ProductFeatureAndAppl")
+    .condition("productId", productId)
+    .conditionDate("fromDate", "thruDate",
+                   ec.user.getNowTimestamp())
+    .list()</code></pre>
+
+    <h3>What Goes Wrong Without Date Filtering?</h3>
+    <div class="callout caution"><div class="icon">🚨</div><p>If <code>filterByDate</code> / <code>conditionDate</code> is <strong>NOT</strong> used on temporal entities, the following bugs occur:</p></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Scenario</th><th>Bug</th><th>Impact</th></tr></thead>
+        <tbody>
+          <tr><td>Customer changed address, order imported</td><td>Old address fetched for ship-to</td><td style="color:var(--red)">Order shipped to wrong address</td></tr>
+          <tr><td>Product SKU changed, return created</td><td>Old product resolved from SKU</td><td style="color:var(--red)">Wrong product on return item</td></tr>
+          <tr><td>Facility removed from store, brokering runs</td><td>Removed facility still considered</td><td style="color:var(--red)">Orders allocated to inactive facility</td></tr>
+          <tr><td>Product moved out of pre-order category</td><td>Still treated as pre-order</td><td style="color:var(--red)">Order stuck in Pre-Order Parking</td></tr>
+          <tr><td>Product variant association changed</td><td>Old component products used</td><td style="color:var(--red)">Wrong items in marketing package</td></tr>
+          <tr><td>Return re-identified with new Shopify ID</td><td>Duplicate return created</td><td style="color:var(--red)">Financial reconciliation errors</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout tip"><div class="icon">💡</div><p><strong>Rule of thumb:</strong> Any time you query an entity with <code>fromDate</code>/<code>thruDate</code> and want the <strong>current</strong> record, use:<br>
+    • <code>.list().filterByDate("fromDate","thruDate", timestamp)</code> — in-memory post-filtering<br>
+    • <code>.conditionDate("fromDate","thruDate", timestamp)</code> — DB-level (preferred for large datasets)<br>
+    Pass <code>null</code> as timestamp to default to "now".</p></div>
+
+    <h3>Critical Entities Summary — Order/Return Flows</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Entity</th><th>Where Used</th><th>Filter Method</th></tr></thead>
+        <tbody>
+          <tr><td><code>ReturnIdentification</code></td><td>Return lookup by Shopify ID</td><td><code>filterByDate</code></td></tr>
+          <tr><td><code>GoodIdentification</code></td><td>Product resolution by SKU/UPC</td><td><code>filterByDate</code></td></tr>
+          <tr><td><code>ProdCatalogCategory</code></td><td>Pre-order/backorder category check</td><td><code>filterByDate</code></td></tr>
+          <tr><td><code>UserLoginSecurityGroup</code></td><td>User group membership</td><td><code>filterByDate</code></td></tr>
+          <tr><td><code>ProductAssoc</code></td><td>Marketing package component lookup during restock</td><td><code>conditionDate</code></td></tr>
+          <tr><td><code>PartyContactMech</code></td><td>Customer address resolution</td><td><code>conditionDate</code></td></tr>
+          <tr><td><code>FacilityContactMech</code></td><td>Facility address for ship-from</td><td><code>conditionDate</code></td></tr>
+          <tr><td><code>ProductStoreFacility</code></td><td>Store-to-facility mapping for brokering</td><td><code>conditionDate</code></td></tr>
+          <tr><td><code>ProductFeatureAppl</code></td><td>Product feature lookup for labels/picking</td><td><code>conditionDate</code></td></tr>
+          <tr><td><code>SecurityGroupPermission</code></td><td>User authorization during API calls</td><td><code>conditionDate</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- TAKEAWAYS -->
+  <section id="takeaways">
+    <h2>Key Takeaways</h2>
+    <div class="takeaways">
+      <div class="takeaway"><div class="t-num">Takeaway 01</div><p><code>fromDate</code>/<code>thruDate</code> is <strong>NOT just metadata</strong> — it is a core part of the Primary Key in most temporal entities, meaning the same logical relationship can have multiple rows differentiated only by time.</p></div>
+      <div class="takeaway"><div class="t-num">Takeaway 02</div><p>Every user action that <strong>"changes" a temporal relationship</strong> creates a new row (<code>fromDate=now</code>) and expires the old row (<code>thruDate=now</code>), rather than updating in place.</p></div>
+      <div class="takeaway"><div class="t-num">Takeaway 03</div><p>Data fetching code <strong>MUST always use <code>filterByDate</code> or <code>conditionDate</code></strong> when querying temporal entities to avoid stale/expired data bugs.</p></div>
+      <div class="takeaway"><div class="t-num">Takeaway 04</div><p>Two patterns exist: <code>filterByDate</code> (post-query, in-memory) and <code>conditionDate</code> (query-level, DB-side). The latter is <strong>more efficient for large datasets</strong>.</p></div>
+      <div class="takeaway"><div class="t-num">Takeaway 05</div><p>The most impactful temporal entities in order/return flows: <code>GoodIdentification</code>, <code>ReturnIdentification</code>, <code>OrderIdentification</code>, <code>ProductAssoc</code>, <code>PartyContactMech</code>, <code>ProductStoreFacility</code>, <code>ProdCatalogCategory</code>.</p></div>
+    </div>
+  </section>
+
+</main>
+</div>
+
+<script>
+  // Active nav link on scroll
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('.nav-link');
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        navLinks.forEach(l => l.classList.remove('active'));
+        const link = document.querySelector(`.nav-link[href="#${e.target.id}"]`);
+        if (link) link.classList.add('active');
+      }
+    });
+  }, { threshold: 0.3 });
+  sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
