@@ -1,0 +1,1743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Moqui Framework — The Complete Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0D1117;
+    --bg-card: #161B22;
+    --bg-elevated: #1C2333;
+    --border: #30363D;
+    --border-subtle: #21262D;
+    --accent: #58A6FF;
+    --accent-warm: #F78166;
+    --accent-green: #3FB950;
+    --accent-purple: #BC8CFF;
+    --accent-yellow: #E3B341;
+    --text-primary: #E6EDF3;
+    --text-secondary: #8B949E;
+    --text-muted: #484F58;
+    --code-bg: #0D1117;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'Inter', sans-serif;
+    --serif: 'Playfair Display', serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text-primary);
+    line-height: 1.7;
+    font-size: 15px;
+  }
+
+  /* ── SIDEBAR ─────────────────────────────────────────────── */
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0;
+    width: 260px;
+    height: 100vh;
+    background: var(--bg-card);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sidebar-brand {
+    padding: 24px 20px 16px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .sidebar-brand .logo-text {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  .sidebar-brand h1 {
+    font-family: var(--serif);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.2;
+    margin-top: 4px;
+  }
+
+  .sidebar nav {
+    padding: 12px 0;
+    flex: 1;
+  }
+
+  .nav-section-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    padding: 12px 20px 4px;
+  }
+
+  .sidebar a {
+    display: block;
+    padding: 6px 20px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 400;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+    line-height: 1.4;
+  }
+
+  .sidebar a:hover {
+    color: var(--text-primary);
+    background: var(--bg-elevated);
+    border-left-color: var(--accent);
+  }
+
+  .sidebar a.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    background: rgba(88,166,255,0.06);
+  }
+
+  /* ── MAIN CONTENT ─────────────────────────────────────────── */
+  .main {
+    margin-left: 260px;
+    min-height: 100vh;
+  }
+
+  /* ── HERO ─────────────────────────────────────────────────── */
+  .hero {
+    background: linear-gradient(135deg, #0D1117 0%, #0A1628 50%, #0D1117 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 80px 60px 64px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -200px; right: -200px;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(88,166,255,0.07) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: -100px; left: 100px;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(188,140,255,0.05) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-badge {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    background: rgba(88,166,255,0.1);
+    border: 1px solid rgba(88,166,255,0.3);
+    padding: 4px 12px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 24px;
+  }
+
+  .hero h1 {
+    font-family: var(--serif);
+    font-size: 54px;
+    font-weight: 900;
+    line-height: 1.1;
+    color: var(--text-primary);
+    max-width: 680px;
+    margin-bottom: 16px;
+  }
+
+  .hero h1 span {
+    background: linear-gradient(135deg, var(--accent), var(--accent-purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero-subtitle {
+    font-size: 17px;
+    color: var(--text-secondary);
+    max-width: 540px;
+    margin-bottom: 32px;
+    line-height: 1.6;
+  }
+
+  .hero-tags {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .hero-tag {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-muted);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 4px;
+  }
+
+  /* ── CONTENT SECTIONS ─────────────────────────────────────── */
+  .content {
+    max-width: 900px;
+    padding: 0 60px 80px;
+  }
+
+  .chapter {
+    padding-top: 64px;
+    border-top: 1px solid var(--border-subtle);
+    margin-top: 0;
+  }
+
+  .chapter:first-of-type { border-top: none; }
+
+  .chapter-number {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 8px;
+  }
+
+  .chapter > h2 {
+    font-family: var(--serif);
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.25;
+    margin-bottom: 20px;
+  }
+
+  .chapter > p, .chapter-body > p {
+    color: var(--text-secondary);
+    font-size: 15px;
+    line-height: 1.8;
+    margin-bottom: 16px;
+    max-width: 700px;
+  }
+
+  h3 {
+    font-family: var(--sans);
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 36px 0 12px;
+  }
+
+  h4 {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent-purple);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin: 28px 0 10px;
+  }
+
+  /* ── TABLES ───────────────────────────────────────────────── */
+  .table-wrap {
+    overflow-x: auto;
+    margin: 20px 0 28px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+
+  thead th {
+    background: var(--bg-elevated);
+    color: var(--text-secondary);
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 10px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border-subtle);
+    transition: background 0.1s;
+  }
+
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: rgba(255,255,255,0.02); }
+
+  td {
+    padding: 10px 16px;
+    color: var(--text-secondary);
+    vertical-align: top;
+    line-height: 1.6;
+  }
+
+  td:first-child {
+    color: var(--text-primary);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  td code, th code {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    background: rgba(88,166,255,0.08);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  /* ── CODE BLOCKS ──────────────────────────────────────────── */
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 22px;
+    margin: 20px 0;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.7;
+    color: #A9B7C6;
+    position: relative;
+  }
+
+  pre .keyword { color: #CC7832; }
+  pre .string  { color: #6A8759; }
+  pre .comment { color: #808080; font-style: italic; }
+  pre .tag     { color: #E8BF6A; }
+  pre .attr    { color: #9876AA; }
+  pre .value   { color: #6A8759; }
+
+  code {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--accent);
+  }
+
+  p code, li code {
+    background: rgba(88,166,255,0.08);
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 13px;
+  }
+
+  /* ── CALLOUTS ─────────────────────────────────────────────── */
+  .callout {
+    display: flex;
+    gap: 14px;
+    padding: 16px 20px;
+    border-radius: 8px;
+    margin: 20px 0;
+    border: 1px solid;
+    font-size: 14px;
+    line-height: 1.65;
+  }
+
+  .callout-icon {
+    font-size: 16px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .callout-text { color: var(--text-secondary); }
+
+  .callout.note {
+    background: rgba(88,166,255,0.05);
+    border-color: rgba(88,166,255,0.2);
+  }
+  .callout.note .callout-icon { color: var(--accent); }
+
+  .callout.warning {
+    background: rgba(247,129,102,0.05);
+    border-color: rgba(247,129,102,0.25);
+  }
+  .callout.warning .callout-icon { color: var(--accent-warm); }
+
+  /* ── FLOW DIAGRAMS ────────────────────────────────────────── */
+  .flow {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 28px 32px;
+    margin: 24px 0;
+    font-family: var(--mono);
+    font-size: 13px;
+  }
+
+  .flow-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 8px 0;
+  }
+
+  .flow-step:not(:last-child) {
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .flow-arrow {
+    color: var(--text-muted);
+    font-size: 16px;
+    text-align: center;
+    padding: 4px 0;
+  }
+
+  .flow-step-label {
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    min-width: 160px;
+  }
+
+  .flow-step-desc {
+    color: var(--text-secondary);
+    font-family: var(--sans);
+    font-size: 13.5px;
+  }
+
+  .flow-step-key {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--accent-purple);
+    white-space: nowrap;
+  }
+
+  /* ── ARCHITECTURE DIAGRAM ─────────────────────────────────── */
+  .arch-diagram {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 32px;
+    margin: 24px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+
+  .arch-layer {
+    width: 100%;
+    max-width: 420px;
+    text-align: center;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .arch-layer:hover {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(88,166,255,0.08);
+  }
+
+  .arch-layer.browser  { color: var(--text-secondary); }
+  .arch-layer.screen   { color: var(--accent-purple); border-color: rgba(188,140,255,0.3); }
+  .arch-layer.service  { color: var(--accent-green); border-color: rgba(63,185,80,0.3); }
+  .arch-layer.entity   { color: var(--accent-yellow); border-color: rgba(227,179,65,0.3); }
+  .arch-layer.database { color: var(--accent-warm); border-color: rgba(247,129,102,0.3); }
+
+  .arch-layer .layer-sub {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .arch-arrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    padding: 4px 0;
+    text-align: center;
+  }
+
+  /* ── ENTITY FIELD CARD ────────────────────────────────────── */
+  .field-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 8px 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr 2fr;
+    gap: 12px;
+    align-items: start;
+    font-size: 13.5px;
+  }
+
+  .field-name {
+    font-family: var(--mono);
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .field-type {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent-purple);
+    background: rgba(188,140,255,0.08);
+    padding: 2px 8px;
+    border-radius: 4px;
+    display: inline-block;
+    align-self: start;
+  }
+
+  .field-desc { color: var(--text-secondary); }
+
+  /* ── TYPE BADGE ───────────────────────────────────────────── */
+  .type-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 20px 0;
+  }
+
+  .type-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+
+  .type-card .tc-moqui {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+  }
+
+  .type-card .tc-java {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent-purple);
+    margin-top: 2px;
+  }
+
+  .type-card .tc-sql {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .type-card .tc-use {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+
+  /* ── PATTERN CARDS ────────────────────────────────────────── */
+  .pattern-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    margin: 20px 0;
+  }
+
+  .pattern-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px;
+    transition: border-color 0.2s;
+  }
+
+  .pattern-card:hover { border-color: var(--accent); }
+
+  .pattern-card .pc-name {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+
+  .pattern-card .pc-where {
+    font-size: 12px;
+    color: var(--accent-yellow);
+    margin-bottom: 8px;
+  }
+
+  .pattern-card .pc-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  /* ── CHEATSHEET CARD ──────────────────────────────────────── */
+  .cheat-grid {
+    display: grid;
+    gap: 10px;
+    margin: 20px 0;
+  }
+
+  .cheat-row {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 18px;
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+
+  .cheat-q {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 13.5px;
+  }
+
+  .cheat-a {
+    color: var(--text-secondary);
+    font-size: 13.5px;
+    line-height: 1.6;
+  }
+
+  /* ── SCROLLBAR ────────────────────────────────────────────── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+  /* ── UTIL ─────────────────────────────────────────────────── */
+  .accent { color: var(--accent); }
+  .green  { color: var(--accent-green); }
+  .warm   { color: var(--accent-warm); }
+  .purple { color: var(--accent-purple); }
+  .yellow { color: var(--accent-yellow); }
+
+  ul, ol {
+    padding-left: 24px;
+    color: var(--text-secondary);
+    margin: 12px 0 16px;
+  }
+
+  li { margin-bottom: 6px; line-height: 1.7; }
+
+  /* ── RESPONSIVE ───────────────────────────────────────────── */
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; }
+    .hero { padding: 40px 24px; }
+    .content { padding: 0 24px 60px; }
+    .hero h1 { font-size: 36px; }
+    .pattern-grid { grid-template-columns: 1fr; }
+    .cheat-row { grid-template-columns: 1fr; }
+    .type-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── SIDEBAR ─────────────────────────────────────────────── -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="logo-text">Documentation</div>
+    <h1>Moqui Framework</h1>
+  </div>
+  <nav>
+    <div class="nav-section-label">Foundations</div>
+    <a href="#ch1">1. What is Moqui?</a>
+    <a href="#ch2">2. 30,000-Foot View</a>
+    <a href="#ch3">3. Boot Sequence</a>
+    <a href="#ch4">4. Configuration Files</a>
+    <a href="#ch5">5. XML — The Language</a>
+    <a href="#ch6">6. Facade Pattern</a>
+    <a href="#ch7">7. ExecutionContext (ec)</a>
+
+    <div class="nav-section-label">Data Layer</div>
+    <a href="#ch8">8. Entity Engine</a>
+    <a href="#ch9">9. Entity XML Reference</a>
+    <a href="#ch10">10. Field Types</a>
+    <a href="#ch11">11. JDBC in Moqui</a>
+    <a href="#ch12">12. MySQL Integration</a>
+    <a href="#ch13">13. Party Data Model</a>
+
+    <div class="nav-section-label">Logic & UI</div>
+    <a href="#ch14">14. Service Layer</a>
+    <a href="#ch15">15. Service Types</a>
+    <a href="#ch16">16. Screen Layer</a>
+    <a href="#ch17">17. Screen XML Walkthrough</a>
+    <a href="#ch18">18. Forms & Services</a>
+
+    <div class="nav-section-label">Internals</div>
+    <a href="#ch19">19. XML Processing Pipeline</a>
+    <a href="#ch20">20. Groovy in Moqui</a>
+    <a href="#ch21">21. Definition vs Facade vs EC</a>
+    <a href="#ch22">22. Design Patterns</a>
+    <a href="#ch23">23. Common Mistakes</a>
+    <a href="#ch24">24. Interview Cheatsheet</a>
+  </nav>
+</aside>
+
+<!-- ── MAIN ────────────────────────────────────────────────── -->
+<main class="main">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-badge">Complete Guide · 2024 Edition</div>
+    <h1>Moqui <span>Framework</span></h1>
+    <p class="hero-subtitle">From Zero to Production — Concepts, Architecture, Internals &amp; Code. The only guide you'll ever need.</p>
+    <div class="hero-tags">
+      <span class="hero-tag">Architecture</span>
+      <span class="hero-tag">JDBC</span>
+      <span class="hero-tag">Entity Engine</span>
+      <span class="hero-tag">Services</span>
+      <span class="hero-tag">Screens</span>
+      <span class="hero-tag">Facades</span>
+      <span class="hero-tag">Party Model</span>
+    </div>
+  </div>
+
+  <div class="content">
+
+  <!-- ── CH 1 ─────────────────────────────────────────────── -->
+  <section class="chapter" id="ch1">
+    <div class="chapter-number">Chapter 1</div>
+    <h2>What is Moqui?</h2>
+    <p>Moqui is an open-source, Java-based application framework for building enterprise business applications. Think of it as a powerful toolkit that handles all the boring plumbing (database, security, transactions, UI) so you can focus purely on writing business logic.</p>
+
+    <h3>Core Technology Stack</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Technology</th><th>Role</th><th>Why Used</th></tr></thead>
+        <tbody>
+          <tr><td>Java</td><td>Runtime language, JVM execution</td><td>Stability, performance, enterprise-grade</td></tr>
+          <tr><td>Groovy</td><td>Dynamic scripting on JVM, service logic</td><td>Concise, Java-compatible, no recompile</td></tr>
+          <tr><td>XML</td><td>Define everything — entities, services, screens</td><td>Declarative, readable, centralised</td></tr>
+          <tr><td>FreeMarker (FTL)</td><td>HTML template rendering</td><td>Powerful templating, data-driven UI</td></tr>
+          <tr><td>JDBC</td><td>Database connectivity layer</td><td>Standard Java DB bridge, works with any DB</td></tr>
+          <tr><td>JTA / Bitronix</td><td>Transaction management</td><td>ACID compliance, automatic rollback</td></tr>
+          <tr><td>HikariCP</td><td>Connection pooling</td><td>Fast, low-latency DB connection reuse</td></tr>
+          <tr><td>JCache / Hazelcast</td><td>Caching layer</td><td>Reduces DB hits, improves performance</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>The Three Golden Rules of Moqui</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Rule</th><th>What It Means</th></tr></thead>
+        <tbody>
+          <tr><td>Convention over Configuration</td><td>Moqui guesses sensible defaults so you write less boilerplate. E.g., entity <code>MoquiTutorial</code> → table <code>MOQUI_TUTORIAL</code> automatically.</td></tr>
+          <tr><td>Everything is XML</td><td>Entities, services, screens, forms, security rules — all declared in XML. No annotations, no code sprawl.</td></tr>
+          <tr><td>Declarative, not Imperative</td><td>You describe WHAT you want ("create a Party record"), not HOW to do it (no manual SQL, no manual <code>transaction.begin()</code>).</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── CH 2 ─────────────────────────────────────────────── -->
+  <section class="chapter" id="ch2">
+    <div class="chapter-number">Chapter 2</div>
+    <h2>How Moqui Works — The 30,000-Foot View</h2>
+    <p>Every request in Moqui travels through exactly 5 layers. Each layer has one job and one job only.</p>
+
+    <div class="arch-diagram">
+      <div class="arch-layer browser">🌐 Browser<div class="layer-sub">HTTP Request</div></div>
+      <div class="arch-arrow">↓ HTTP Request</div>
+      <div class="arch-layer screen">📄 Screen (UI — XML)<div class="layer-sub">ScreenDefinition</div></div>
+      <div class="arch-arrow">↓ Service Call</div>
+      <div class="arch-layer service">⚙️ Service (Business Logic — Groovy/XML)<div class="layer-sub">ServiceDefinition</div></div>
+      <div class="arch-arrow">↓ Entity Operation</div>
+      <div class="arch-layer entity">🗄️ Entity Engine (ORM — XML)<div class="layer-sub">EntityDefinition</div></div>
+      <div class="arch-arrow">↓ JDBC / SQL</div>
+      <div class="arch-layer database">💾 Database (MySQL / PostgreSQL)<div class="layer-sub">JDBC / SQL</div></div>
+    </div>
+
+    <div class="callout note">
+      <span class="callout-icon">📝</span>
+      <span class="callout-text">Nothing ever skips a layer. The UI never directly touches the DB. Services never build raw SQL. This is the entire philosophy of Moqui in one diagram.</span>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Layer</th><th>Job</th><th>Key Object</th></tr></thead>
+        <tbody>
+          <tr><td>Browser</td><td>User clicks, submits forms, sends HTTP requests</td><td>HTTP Request</td></tr>
+          <tr><td>Screen</td><td>Defines what the user sees (UI in XML), calls services, handles navigation</td><td>ScreenDefinition</td></tr>
+          <tr><td>Service</td><td>Contains ALL business logic — validation, rules, calculations</td><td>ServiceDefinition</td></tr>
+          <tr><td>Entity Engine</td><td>Converts XML entity definitions → SQL, manages CRUD</td><td>EntityDefinition</td></tr>
+          <tr><td>Database</td><td>Physically stores and retrieves data (MySQL, PostgreSQL, etc.)</td><td>JDBC / SQL</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── CH 3 ─────────────────────────────────────────────── -->
+  <section class="chapter" id="ch3">
+    <div class="chapter-number">Chapter 3</div>
+    <h2>Boot Sequence — How Moqui Starts Up</h2>
+    <p>When you run <code>./gradlew run</code>, Moqui goes through a precise startup sequence inside <code>ExecutionContextFactoryImpl</code> (ECFI). Think of ECFI as the restaurant building that opens every morning and sets up everything before the first customer arrives.</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>What Happens</th><th>Key Class</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Read <code>MoquiInit.properties</code> → finds <code>runtime/</code> directory and conf file path</td><td><code>ExecutionContextFactoryImpl</code></td></tr>
+          <tr><td>2</td><td>Parse <code>MoquiDefaultConf.xml</code> → base configuration tree (MNode in memory)</td><td><code>initBaseConfig()</code></td></tr>
+          <tr><td>3</td><td><code>initComponents()</code> → scan component-list, load each component directory</td><td><code>initComponents()</code></td></tr>
+          <tr><td>4</td><td><code>initConfig()</code> → merge component <code>MoquiConf.xml</code> + runtime conf into final config</td><td><code>initConfig()</code></td></tr>
+          <tr><td>5</td><td><code>initClassLoader()</code> → build MClassLoader + GroovyClassLoader chain</td><td><code>initClassLoader()</code></td></tr>
+          <tr><td>6</td><td><code>new CacheFacadeImpl()</code> → create JCache/Hazelcast cache buckets</td><td><code>CacheFacadeImpl</code></td></tr>
+          <tr><td>7</td><td><code>new ResourceFacadeImpl()</code> → FTL renderer, Groovy script runner, resource locators</td><td><code>ResourceFacadeImpl</code></td></tr>
+          <tr><td>8</td><td><code>new TransactionFacadeImpl()</code> → transaction manager (Bitronix by default)</td><td><code>TransactionFacadeImpl</code></td></tr>
+          <tr><td>9</td><td><code>new EntityFacadeImpl()</code> → entity definitions loaded from ALL <code>entity/*.xml</code> files</td><td><code>EntityFacadeImpl</code></td></tr>
+          <tr><td>10</td><td><code>new ServiceFacadeImpl()</code> → service runners registered; SECA rules loaded</td><td><code>ServiceFacadeImpl</code></td></tr>
+          <tr><td>11</td><td><code>new ScreenFacadeImpl()</code> → screen caches initialized; FTL widget templates loaded</td><td><code>ScreenFacadeImpl</code></td></tr>
+          <tr><td>12</td><td><code>postFacadeInit()</code> → warm caches, start scheduled job runner, everything ready</td><td><code>postFacadeInit()</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout note">
+      <span class="callout-icon">📝</span>
+      <span class="callout-text">ECFI is created <strong>once</strong> when the server starts. It lives until the server shuts down. All facades hang off this one object.</span>
+    </div>
+  </section>
+
+  <!-- ── CH 4 ─────────────────────────────────────────────── -->
+  <section class="chapter" id="ch4">
+    <div class="chapter-number">Chapter 4</div>
+    <h2>Configuration Files — How They Load</h2>
+    <p>Moqui configuration is layered. Each layer overrides the previous one. Think of it like CSS specificity — more specific configs win.</p>
+
+    <div class="flow">
+      <div class="flow-step"><div class="flow-step-label">MoquiDefaultConf.xml</div><div class="flow-step-desc">Framework built-in defaults — never edit this</div></div>
+      <div class="flow-arrow" style="padding: 4px 0 4px 24px; color: var(--text-muted);">↓ overridden by</div>
+      <div class="flow-step"><div class="flow-step-label">MoquiDevConf.xml</div><div class="flow-step-desc">Your dev overrides: DB creds, debug flags, local JDBC settings</div></div>
+      <div class="flow-arrow" style="padding: 4px 0 4px 24px; color: var(--text-muted);">↓ overridden by</div>
+      <div class="flow-step"><div class="flow-step-label">MoquiActualConf.xml</div><div class="flow-step-desc">Production overrides: real DB host, passwords, production DB</div></div>
+      <div class="flow-arrow" style="padding: 4px 0 4px 24px; color: var(--text-muted);">↓ merged with</div>
+      <div class="flow-step"><div class="flow-step-label">Component MoquiConf.xml</div><div class="flow-step-desc">Per-component config — datasource groups, entity groups</div></div>
+    </div>
+
+    <h3>JDBC Configuration Example</h3>
+    <pre><span class="tag">&lt;datasource</span> <span class="attr">name</span>=<span class="value">"defaultDS"</span> <span class="attr">database-conf-name</span>=<span class="value">"mysql"</span><span class="tag">&gt;</span>
+  <span class="tag">&lt;inline-jdbc</span>
+    <span class="attr">jdbc-driver</span>=<span class="value">"com.mysql.cj.jdbc.Driver"</span>
+    <span class="attr">jdbc-uri</span>=<span class="value">"jdbc:mysql://127.0.0.1:3306/moqui"</span>
+    <span class="attr">jdbc-username</span>=<span class="value">"moqui"</span>
+    <span class="attr">jdbc-password</span>=<span class="value">"@12345abC"</span><span class="tag">/&gt;</span>
+<span class="tag">&lt;/datasource&gt;</span></pre>
+  </section>
+
+  <!-- ── CH 5 ─────────────────────────────────────────────── -->
+  <section class="chapter" id="ch5">
+    <div class="chapter-number">Chapter 5</div>
+    <h2>XML — The Language of Moqui</h2>
+    <p>In Moqui, XML is not "config". It is the programming language. You don't write Java classes to define a database table — you write XML. You don't write controller methods — you write XML transitions.</p>
+
+    <h3>Adarsh's Types of XML Artifacts</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>XML Type</th><th>File Pattern</th><th>What It Defines</th></tr></thead>
+        <tbody>
+          <tr><td>Entity XML</td><td><code>entity/*.xml</code></td><td>Database tables, columns, relationships, indexes, seed data</td></tr>
+          <tr><td>Service XML</td><td><code>service/*.xml</code></td><td>Business operations — inputs, outputs, logic, transactions</td></tr>
+          <tr><td>Screen XML</td><td><code>screen/*.xml</code></td><td>UI pages, forms, lists, navigation, transitions</td></tr>
+          <tr><td>SECA XML</td><td><code>*.secas.xml</code></td><td>Event → Condition → Action rules (auto-trigger services)</td></tr>
+          <tr><td>Data XML</td><td><code>data/*.xml</code></td><td>Seed and demo data records loaded into DB on startup</td></tr>
+          <tr><td>REST XML</td><td><code>*.rest.xml</code></td><td>Exposes services as REST API endpoints</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>The Fundamental Rule: XML is NEVER Executed Directly</h3>
+    <div class="flow">
+      <div class="flow-step"><div class="flow-step-label">XML File on Disk</div></div>
+      <div class="flow-arrow" style="padding:4px 0 4px 16px;">↓ Parsed by MNode parser (SAX-based, fast)</div>
+      <div class="flow-step"><div class="flow-step-label">MNode Tree in RAM</div></div>
+      <div class="flow-arrow" style="padding:4px 0 4px 16px;">↓ Converted to Definition Objects</div>
+      <div class="flow-step"><div class="flow-step-label">EntityDefinition / ServiceDefinition / ScreenDefinition</div></div>
+      <div class="flow-arrow" style="padding:4px 0 4px 16px;">↓ Actions compiled to Groovy bytecode</div>
+      <div class="flow-step"><div class="flow-step-label">JVM Class (cached forever)</div></div>
+      <div class="flow-arrow" style="padding:4px 0 4px 16px;">↓ Executed on every request</div>
+      <div class="flow-step"><div class="flow-step-label">Result returned</div></div>
+    </div>
+
+    <div class="callout note">
+      <span class="callout-icon">📝</span>
+      <span class="callout-text">The XML file is read <strong>once</strong>. The result is cached in memory. The original file is never re-read at runtime unless you're in dev mode.</span>
+    </div>
+  </section>
+
+  <!-- ── CH 6 ─────────────────────────────────────────────── -->
+  <section class="chapter" id="ch6">
+    <div class="chapter-number">Chapter 6</div>
+    <h2>Facade Pattern — The Backbone of Moqui</h2>
+    <p>A Facade is a simple, clean front door to a complex system. Instead of writing 50 lines of JDBC code to run a query, you call <code>ec.entity.find("party.Party").list()</code> — and Moqui handles the 50 lines for you.</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Facade</th><th>You Write</th><th>What It Hides</th></tr></thead>
+        <tbody>
+          <tr><td><code>EntityFacade</code><br><small style="color:var(--text-muted)">ec.entity</small></td><td><code>ec.entity.find("party.Party").list()</code></td><td>SQL generation, JDBC connections, connection pooling, result set mapping, caching</td></tr>
+          <tr><td><code>ServiceFacade</code><br><small style="color:var(--text-muted)">ec.service</small></td><td><code>ec.service.sync().name("create#Person").call()</code></td><td>Service discovery, parameter validation, transaction management, SECA rules</td></tr>
+          <tr><td><code>ScreenFacade</code><br><small style="color:var(--text-muted)">ec.screen</small></td><td>Auto-rendered from XML</td><td>FreeMarker templates, form rendering, navigation, widget rendering</td></tr>
+          <tr><td><code>TransactionFacade</code></td><td>Auto-managed</td><td>JTA transaction begin/commit/rollback, XA transactions, savepoints</td></tr>
+          <tr><td><code>CacheFacade</code><br><small style="color:var(--text-muted)">ec.cache</small></td><td><code>ecfi.cacheFacade.getCache("my.cache")</code></td><td>JCache internals, eviction policies, expiry, distributed caching</td></tr>
+          <tr><td><code>ResourceFacade</code><br><small style="color:var(--text-muted)">ec.resource</small></td><td><code>ec.resource.groovy.script()</code></td><td>File reading, FTL rendering, Groovy compilation, resource locators</td></tr>
+          <tr><td><code>LoggerFacade</code><br><small style="color:var(--text-muted)">ec.logger</small></td><td><code>ec.logger.info("msg")</code></td><td>Log4j2 internals, log levels, log routing</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout note">
+      <span class="callout-icon">📝</span>
+      <span class="callout-text">All facades are created <strong>once</strong> at boot inside ECFI and shared across ALL requests. They are thread-safe. You never create a facade — you always use the one <code>ec</code> gives you.</span>
+    </div>
+  </section>
+
+  <!-- ── CH 7 ─────────────────────────────────────────────── -->
+  <section class="chapter" id="ch7">
+    <div class="chapter-number">Chapter 7</div>
+    <h2>ExecutionContext (ec) — Your Runtime Buddy</h2>
+    <p>ExecutionContext is the most important object you'll use in Moqui. It is your handle to everything — the current user, the database, services, the web request, error messages, and all facades. It lives for exactly ONE request and is destroyed after.</p>
+
+    <h3>The Restaurant Analogy</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Moqui Concept</th><th>Restaurant Equivalent</th><th>Key Behaviour</th></tr></thead>
+        <tbody>
+          <tr><td>ExecutionContextFactory (ECFI)</td><td>The restaurant building</td><td>One per server. Never changes. Lives forever.</td></tr>
+          <tr><td>ExecutionContext (EC)</td><td>One customer's table + waiter</td><td>One per request/thread. Created fresh. Destroyed after request.</td></tr>
+          <tr><td>Facade (EntityFacade etc.)</td><td>Kitchen department head</td><td>One per server. Shared. Thread-safe. Accessed via <code>ec.entity</code> etc.</td></tr>
+          <tr><td>Definition (EntityDefinition)</td><td>The recipe card</td><td>Created from XML once. Cached permanently. Never changes.</td></tr>
+          <tr><td>ContextStack</td><td>Waiter's notepad</td><td>Variables set during this request only. Read top-to-bottom.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>What EC Holds (Per-Request State)</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Property</th><th>Type</th><th>What It Carries</th></tr></thead>
+        <tbody>
+          <tr><td><code>ec.user</code></td><td><code>UserFacadeImpl</code></td><td>Current logged-in user, roles, permissions</td></tr>
+          <tr><td><code>ec.context</code></td><td><code>ContextStack</code></td><td>All variables in scope for this request (like a stack of Maps)</td></tr>
+          <tr><td><code>ec.message</code></td><td><code>MessageFacadeImpl</code></td><td>Errors and info messages accumulated during this request</td></tr>
+          <tr><td><code>ec.web</code></td><td><code>WebFacadeImpl</code></td><td>HTTP request object, response, session, cookies, URL params</td></tr>
+          <tr><td><code>ec.entity</code></td><td><code>EntityFacadeImpl</code></td><td>Database operations — shared facade, accessed per-request</td></tr>
+          <tr><td><code>ec.service</code></td><td><code>ServiceFacadeImpl</code></td><td>Service calls — shared facade, accessed per-request</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout warning">
+      <span class="callout-icon">⚠️</span>
+      <span class="callout-text">EC is <strong>NEVER</strong> shared between threads. Two simultaneous users each get their own EC. But both share the same EntityFacade, ServiceFacade, etc.</span>
+    </div>
+  </section>
+
+  <!-- ── CH 8 ─────────────────────────────────────────────── -->
+  <section class="chapter" id="ch8">
+    <div class="chapter-number">Chapter 8</div>
+    <h2>Entity Engine — The Database Layer</h2>
+    <p>The Entity Engine is Moqui's built-in ORM. You write zero SQL. You define your database tables in XML, and the Entity Engine does everything else — creates tables, runs queries, manages relationships, handles caching.</p>
+
+    <h3>Core Entity Engine Operations</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Operation</th><th>Moqui Code</th><th>Generated SQL</th></tr></thead>
+        <tbody>
+          <tr><td>Create</td><td><code>ec.entity.makeValue("party.Party").setAll([...]).create()</code></td><td><code>INSERT INTO PARTY (...) VALUES (...)</code></td></tr>
+          <tr><td>Read One</td><td><code>ec.entity.find("party.Party").condition("partyId","P1").one()</code></td><td><code>SELECT * FROM PARTY WHERE PARTY_ID = 'P1'</code></td></tr>
+          <tr><td>Read Many</td><td><code>ec.entity.find("party.Person").list()</code></td><td><code>SELECT * FROM PERSON</code></td></tr>
+          <tr><td>Update</td><td><code>partyValue.set("statusId","INACTIVE").update()</code></td><td><code>UPDATE PARTY SET STATUS_ID='INACTIVE' WHERE PARTY_ID='P1'</code></td></tr>
+          <tr><td>Delete</td><td><code>partyValue.delete()</code></td><td><code>DELETE FROM PARTY WHERE PARTY_ID = 'P1'</code></td></tr>
+          <tr><td>Auto-service create</td><td><code>ec.service.sync().name("create#party.Party").call()</code></td><td><code>INSERT INTO PARTY (...)</code> — zero code needed</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Entity Engine vs Raw JDBC vs Hibernate</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Feature</th><th>Raw JDBC</th><th>Hibernate</th><th>Moqui Entity Engine</th></tr></thead>
+        <tbody>
+          <tr><td>SQL Writing</td><td>Manual (you write every query)</td><td>Generated from annotations</td><td>Generated from XML definition</td></tr>
+          <tr><td>Boilerplate</td><td>Very high (connections, PS, RS)</td><td>Medium (session management)</td><td>None — just call find/create</td></tr>
+          <tr><td>Configuration</td><td>Manual everywhere</td><td>Annotations in code</td><td>Central XML files</td></tr>
+          <tr><td>Transactions</td><td>Manual begin/commit/rollback</td><td>Session-level</td><td>Automatic, JTA-backed</td></tr>
+          <tr><td>DB Independence</td><td>No — SQL varies by DB</td><td>Partial — dialect dependent</td><td>Full — same XML for all DBs</td></tr>
+          <tr><td>Caching</td><td>No — you build it yourself</td><td>2-level cache (optional)</td><td>Built-in, configurable per entity</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── CH 9 ─────────────────────────────────────────────── -->
+  <section class="chapter" id="ch9">
+    <div class="chapter-number">Chapter 9</div>
+    <h2>Entity XML — Complete Tag Reference</h2>
+    <p>This is the master reference for every tag and attribute in a Moqui entity XML file.</p>
+
+    <h3>9.1 &lt;entity&gt; Tag — The Root</h3>
+    <p>The <code>&lt;entity&gt;</code> tag simultaneously defines: a database table, a Java object blueprint, and all framework-level rules for that data.</p>
+
+    <pre><span class="tag">&lt;entity</span> <span class="attr">entity-name</span>=<span class="value">"Party"</span> <span class="attr">package</span>=<span class="value">"party"</span><span class="tag">&gt;</span></pre>
+
+    <h4>use — Entity Behaviour Type</h4>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>use value</th><th>When to Use</th><th>Caching</th><th>Example Entities</th></tr></thead>
+        <tbody>
+          <tr><td><code>transactional</code> (default)</td><td>Financial/operational data where accuracy is critical</td><td>❌ Not cached</td><td>orders, payments, inventory transactions</td></tr>
+          <tr><td><code>nontransactional</code></td><td>Master/reference data that changes rarely</td><td>✅ Can be cached</td><td>Party, Product, Customer</td></tr>
+          <tr><td><code>configuration</code></td><td>Framework and app config settings</td><td>✅ Heavily cached</td><td>system settings, enumeration types</td></tr>
+          <tr><td><code>analytical</code></td><td>Reporting/aggregated data derived from transactional data</td><td>Optional</td><td>sales summaries, dashboards</td></tr>
+          <tr><td><code>logging</code></td><td>High-volume log records, audit trails</td><td>❌ Never cached</td><td>audit logs, event logs</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h4>Primary Key Generation Attributes</h4>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Attribute</th><th>What It Does</th><th>Default / Example</th></tr></thead>
+        <tbody>
+          <tr><td><code>sequence-primary-use-uuid</code></td><td>true → use UUID (globally unique), false → sequential integer</td><td>Default: false → 1001, 1002...</td></tr>
+          <tr><td><code>sequence-bank-size</code></td><td>Pre-fetches N IDs from DB at once to avoid a DB hit on every insert</td><td>Default: 50</td></tr>
+          <tr><td><code>sequence-primary-stagger</code></td><td>Makes IDs jump randomly in range 1 to N, preventing predictable IDs</td><td>stagger=5 → 1001, 1003, 1008...</td></tr>
+          <tr><td><code>sequence-primary-prefix</code></td><td>Adds a text prefix to every generated ID</td><td>prefix=ORD_ → ORD_1001</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h4>authorize-skip — Security Override</h4>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Value</th><th>What Gets Skipped</th></tr></thead>
+        <tbody>
+          <tr><td><code>false</code> (default)</td><td>Nothing skipped — full permission check always runs</td></tr>
+          <tr><td><code>true</code></td><td>ALL checks skipped (create, update, delete, view) — dangerous, use with care</td></tr>
+          <tr><td><code>create</code></td><td>Only CREATE permission check skipped — useful for anonymous user registration</td></tr>
+          <tr><td><code>view</code></td><td>Only VIEW (read) check skipped — good for public data that anyone can see</td></tr>
+          <tr><td><code>view-create</code></td><td>Both VIEW and CREATE skipped — for entities anyone can read and create</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>9.2 &lt;field&gt; Tag — Column + Behaviour</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Attribute</th><th>Purpose</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><code>name</code> (required)</td><td>Field/property name in code</td><td>Always camelCase</td></tr>
+          <tr><td><code>type</code> (required)</td><td>Abstract data type — Moqui maps to Java type → SQL type</td><td>id, text-short, date-time, number-decimal, etc.</td></tr>
+          <tr><td><code>is-pk</code></td><td>true = this is a primary key column. Can have multiple fields as composite PK</td><td>Adds PK + unique index</td></tr>
+          <tr><td><code>not-null="true"</code></td><td>DB-level NOT NULL constraint</td><td>Throws error if null submitted</td></tr>
+          <tr><td><code>encrypt="true"</code></td><td>Value is stored encrypted in DB. For passwords, tokens, sensitive data</td><td>Decrypted transparently on read</td></tr>
+          <tr><td><code>default</code></td><td>Groovy expression evaluated when value is null on create/update</td><td><code>default="nowTimestamp()"</code></td></tr>
+          <tr><td><code>create-only="true"</code></td><td>Once set on create, this field's value can never be changed</td><td>Like a write-once field</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>9.3 &lt;relationship&gt; Tag — Entity Joins</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>type Attribute</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><code>type="one"</code></td><td>One record on the related side. Like a FK: Order → Customer. Enforces FK constraint in DB.</td></tr>
+          <tr><td><code>type="many"</code></td><td>Multiple records on the related side. Like: Customer → Orders.</td></tr>
+          <tr><td><code>type="one-nofk"</code></td><td>One related record, but NO FK constraint in DB. Use for optional relationships or legacy DB compatibility.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <pre><span class="relationship">&lt;relationship</span> <span class="attr">type</span>=<span class="value">"one"</span> <span class="attr">related</span>=<span class="value">"Customer"</span><span class="tag">&gt;</span>
+  <span class="tag">&lt;key-map</span> <span class="attr">field-name</span>=<span class="value">"customerId"</span> <span class="attr">related</span>=<span class="value">"customerId"</span><span class="tag">/&gt;</span>
+<span class="tag">&lt;/relationship&gt;</span></pre>
+
+    <h3>9.4 &lt;view-entity&gt; — Joins &amp; Complex Queries</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Child Tag</th><th>SQL Equivalent</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><code>&lt;member-entity&gt;</code></td><td>FROM / JOIN clause</td><td>Defines which entities/tables participate and how they join</td></tr>
+          <tr><td><code>&lt;alias&gt;</code></td><td>SELECT column AS name</td><td>Selects a specific field, optionally with aggregation</td></tr>
+          <tr><td><code>&lt;alias-all&gt;</code></td><td>SELECT alias.*</td><td>Pulls ALL fields from a member entity into the view</td></tr>
+          <tr><td><code>&lt;entity-condition&gt;</code></td><td>WHERE clause</td><td>Filters records — static conditions built into the view</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout note">
+      <span class="callout-icon">📝</span>
+      <span class="callout-text"><code>join-optional="true"</code> = LEFT JOIN. Without it = INNER JOIN.</span>
+    </div>
+  </section>
+
+  <!-- ── CH 10 ─────────────────────────────────────────────── -->
+  <section class="chapter" id="ch10">
+    <div class="chapter-number">Chapter 10</div>
+    <h2>Field Types — The Complete Mapping</h2>
+    <p>Moqui maps types through a 3-step chain: Moqui Abstract Type → Java Type → Database-Specific SQL Type. This is what makes Moqui database-independent.</p>
+
+    <div class="type-grid">
+      <div class="type-card"><div class="tc-moqui">id</div><div class="tc-java">String</div><div class="tc-sql">VARCHAR(60)</div><div class="tc-use">Primary keys, foreign keys, short identifiers</div></div>
+      <div class="type-card"><div class="tc-moqui">id-long</div><div class="tc-java">String</div><div class="tc-sql">VARCHAR(255)</div><div class="tc-use">Long identifiers, external IDs</div></div>
+      <div class="type-card"><div class="tc-moqui">text-short</div><div class="tc-java">String</div><div class="tc-sql">VARCHAR(63)</div><div class="tc-use">Short strings: names, codes, status values</div></div>
+      <div class="type-card"><div class="tc-moqui">text-medium</div><div class="tc-java">String</div><div class="tc-sql">VARCHAR(255)</div><div class="tc-use">Standard strings: descriptions, titles, URLs</div></div>
+      <div class="type-card"><div class="tc-moqui">text-long</div><div class="tc-java">String</div><div class="tc-sql">TEXT (up to 65K)</div><div class="tc-use">Long text: notes, descriptions, HTML content</div></div>
+      <div class="type-card"><div class="tc-moqui">text-very-long</div><div class="tc-java">String</div><div class="tc-sql">LONGTEXT (up to 4GB)</div><div class="tc-use">Very large text: XML, JSON blobs, article bodies</div></div>
+      <div class="type-card"><div class="tc-moqui">date-time</div><div class="tc-java">java.sql.Timestamp</div><div class="tc-sql">DATETIME</div><div class="tc-use">Full timestamp: created date, order date</div></div>
+      <div class="type-card"><div class="tc-moqui">number-integer</div><div class="tc-java">Long</div><div class="tc-sql">DECIMAL(20,0)</div><div class="tc-use">Whole numbers: quantity, count, sequence</div></div>
+      <div class="type-card"><div class="tc-moqui">currency-amount</div><div class="tc-java">BigDecimal</div><div class="tc-sql">DECIMAL(22,2)</div><div class="tc-use">Money values (2 decimal places): price, tax</div></div>
+      <div class="type-card"><div class="tc-moqui">text-indicator</div><div class="tc-java">String</div><div class="tc-sql">CHAR(1)</div><div class="tc-use">Y/N boolean indicators (Moqui style for flags)</div></div>
+    </div>
+
+    <div class="callout warning">
+      <span class="callout-icon">⚠️</span>
+      <span class="callout-text">Never use <code>number-float</code> for money! Floating point arithmetic is imprecise. <code>0.1 + 0.2 ≠ 0.3</code> in float. Always use <code>currency-amount</code> for financial values.</span>
+    </div>
+  </section>
+
+  <!-- ── CH 11 ─────────────────────────────────────────────── -->
+  <section class="chapter" id="ch11">
+    <div class="chapter-number">Chapter 11</div>
+    <h2>JDBC in Moqui</h2>
+    <p>JDBC (Java Database Connectivity) is the standard Java API for talking to relational databases. Moqui's Entity Engine uses JDBC internally — you almost never touch it directly.</p>
+
+    <h3>Standard JDBC 6-Step Workflow (What Moqui Does Internally)</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Action</th><th>Code Example</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Load Driver</td><td><code>Class.forName("com.mysql.cj.jdbc.Driver")</code></td></tr>
+          <tr><td>2</td><td>Get Connection</td><td><code>DriverManager.getConnection("jdbc:mysql://...")</code></td></tr>
+          <tr><td>3</td><td>Create Statement</td><td><code>conn.prepareStatement("SELECT * FROM PARTY")</code></td></tr>
+          <tr><td>4</td><td>Execute Query</td><td><code>ps.executeQuery()</code></td></tr>
+          <tr><td>5</td><td>Process Results</td><td><code>while(rs.next()) { rs.getString("PARTY_ID"); }</code></td></tr>
+          <tr><td>6</td><td>Close Connection</td><td><code>conn.close()</code> — actually returns to HikariCP pool</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Common JDBC Errors &amp; Fixes</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Error</th><th>Cause</th><th>Fix</th></tr></thead>
+        <tbody>
+          <tr><td><code>ClassNotFoundException</code></td><td>JDBC driver JAR missing</td><td>Add <code>mysql-connector-java.jar</code> to <code>runtime/lib/</code></td></tr>
+          <tr><td>Connection refused</td><td>MySQL not running / wrong host or port</td><td>Start MySQL service, verify host:port in config</td></tr>
+          <tr><td>Access denied for user</td><td>Wrong credentials or missing DB grant</td><td>Check username/password; run <code>GRANT ALL ON moqui.* TO ...</code></td></tr>
+          <tr><td>No suitable driver found</td><td>Driver class name typo</td><td>Verify <code>jdbc-driver</code> attribute in config exactly matches</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── CH 12 ─────────────────────────────────────────────── -->
+  <section class="chapter" id="ch12">
+    <div class="chapter-number">Chapter 12</div>
+    <h2>Moqui ↔ MySQL Integration</h2>
+
+    <h3>Character Set — UTF-8 vs UTF8MB4</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Type</th><th>Max Bytes/Char</th><th>Emoji Support</th><th>Use When</th></tr></thead>
+        <tbody>
+          <tr><td><code>utf8</code> (MySQL)</td><td>3 bytes</td><td>❌ No</td><td>Legacy apps only — avoid for new projects</td></tr>
+          <tr><td><code>utf8mb4</code> (MySQL)</td><td>4 bytes</td><td>✅ Yes — full Unicode</td><td>Always use this for modern applications</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>What <code>./gradlew load</code> Does</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Step</th><th>What Happens</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Gradle reads build scripts, identifies the load task, sets up classpath</td></tr>
+          <tr><td>2</td><td>Starts embedded Jetty server, loads <code>MoquiDevConf.xml</code> + <code>MoquiActualConf.xml</code></td></tr>
+          <tr><td>3</td><td>Reads ALL <code>entity/*.xml</code> files from all components, builds EntityDefinition objects</td></tr>
+          <tr><td>4</td><td>Connects via JDBC using configured credentials</td></tr>
+          <tr><td>5</td><td>Compares entity definitions with existing DB schema → generates CREATE TABLE or ALTER TABLE SQL</td></tr>
+          <tr><td>6</td><td>Reads all <code>&lt;seed-data&gt;</code> blocks from entity XML files → generates INSERT SQL → executes</td></tr>
+          <tr><td>7</td><td>If demo data flag set → loads additional demo records</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout note">
+      <span class="callout-icon">📝</span>
+      <span class="callout-text">Run <code>./gradlew load</code> when: first setup, adding new entities, adding new seed data. It's safe to run multiple times — it only creates missing tables/columns.</span>
+    </div>
+  </section>
+
+  <!-- ── CH 13 ─────────────────────────────────────────────── -->
+  <section class="chapter" id="ch13">
+    <div class="chapter-number">Chapter 13</div>
+    <h2>Party Data Model — Enterprise Design</h2>
+    <p>The Party model is the foundation of enterprise ERP/CRM systems. Instead of having separate Customer, Vendor, Employee, Organization tables (which causes duplication and rigid structure), Moqui uses a single abstract 'Party' concept.</p>
+
+    <p>Imagine: A company (ACME Corp) is your customer AND your supplier. With traditional separate tables, you'd need two records and they'd get out of sync. With Party model, ACME Corp is ONE Party record — it just has relationships saying it's both a customer and a supplier.</p>
+
+    <div class="flow">
+      <div class="flow-step"><div class="flow-step-label">Party (abstract base)</div><div class="flow-step-desc">Any actor in the system</div></div>
+      <div class="flow-arrow" style="padding:2px 0 2px 24px;">├── Person (an individual human)</div>
+      <div class="flow-arrow" style="padding:2px 0 2px 24px;">└── PartyGroup (a company / organization)</div>
+      <div style="padding: 8px 0"></div>
+      <div class="flow-step"><div class="flow-step-label">ContactMech</div><div class="flow-step-desc">How to contact any Party</div></div>
+      <div class="flow-arrow" style="padding:2px 0 2px 24px;">├── Email Address</div>
+      <div class="flow-arrow" style="padding:2px 0 2px 24px;">├── Phone Number</div>
+      <div class="flow-arrow" style="padding:2px 0 2px 24px;">└── Postal Address</div>
+    </div>
+
+    <h3>Design Patterns in the Party Model</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Pattern</th><th>Where Used</th><th>Benefit</th></tr></thead>
+        <tbody>
+          <tr><td>Subtype Pattern</td><td>Party → Person / PartyGroup</td><td>Shared identity (partyId), specialised fields per type, no duplication</td></tr>
+          <tr><td>Enumeration Pattern</td><td>partyTypeEnumId, contactMechTypeId</td><td>Types are data, not columns — add new types without DB schema change</td></tr>
+          <tr><td>Valid-Time Modeling</td><td>PartyContactMech (fromDate, thruDate)</td><td>Full history preserved, no data loss, auditable</td></tr>
+          <tr><td>Join Table</td><td>PartyContactMech</td><td>Many-to-many: one party has many contacts, one contact can be shared</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout note">
+      <span class="callout-icon">📝</span>
+      <span class="callout-text">To 'change' an email: set <code>thruDate</code> on old record = today, create new <code>PartyContactMech</code> with <code>fromDate</code> = today. Old email is preserved for history!</span>
+    </div>
+  </section>
+
+  <!-- ── CH 14 ─────────────────────────────────────────────── -->
+  <section class="chapter" id="ch14">
+    <div class="chapter-number">Chapter 14</div>
+    <h2>Service Layer — Business Logic</h2>
+    <p>A Service in Moqui is NOT just a function. It is a fully managed execution unit that includes: business logic + input validation + transaction management + security + error handling.</p>
+
+    <h3>Service Naming Convention</h3>
+    <pre><span class="comment">// path + verb + noun:</span>
+myapp.PersonServices.<span class="keyword">create</span>#Person
+<span class="comment">// call it:</span>
+ec.service.sync().name(<span class="string">"create#Person"</span>).call()</pre>
+
+    <h3>Service Control Attributes — Authentication</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Attribute &amp; Value</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><code>authenticate="true"</code> (default)</td><td>User must be logged in. Full authorization check runs.</td></tr>
+          <tr><td><code>authenticate="false"</code></td><td>No login required. Auth check is completely skipped.</td></tr>
+          <tr><td><code>authenticate="anonymous-all"</code></td><td>No login required. Logs in as anonymous user. All actions authorized.</td></tr>
+          <tr><td><code>authenticate="anonymous-view"</code></td><td>No login required. Logs in as anonymous. Only VIEW action authorized.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Transaction Control</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Attribute</th><th>Options &amp; Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><code>transaction</code></td><td><code>use-or-begin</code> (default): join existing TX or start new one. <code>new</code>: always start fresh TX. <code>ignore</code>: no TX management.</td></tr>
+          <tr><td><code>transaction-timeout</code></td><td>Seconds before auto-rollback. Override per-service for long operations.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Concurrency Control (Semaphore)</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>semaphore value</th><th>Behaviour</th><th>Use Case</th></tr></thead>
+        <tbody>
+          <tr><td><code>none</code> (default)</td><td>No locking — multiple instances can run simultaneously</td><td>Most services</td></tr>
+          <tr><td><code>fail</code></td><td>If same service is already running → immediately throw error</td><td>Prevent duplicate processing</td></tr>
+          <tr><td><code>wait</code></td><td>If same service is already running → wait until it finishes</td><td>Serial queue behaviour</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── CH 15 ─────────────────────────────────────────────── -->
+  <section class="chapter" id="ch15">
+    <div class="chapter-number">Chapter 15</div>
+    <h2>Service Types — All 6 in Detail</h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>type</th><th>Logic Location</th><th>When to Use</th></tr></thead>
+        <tbody>
+          <tr><td><code>inline</code> (default)</td><td><code>&lt;actions&gt;</code> block inside XML</td><td>Most common — small to medium business logic</td></tr>
+          <tr><td><code>entity-auto</code></td><td>No code — auto-generated</td><td>CRUD on any entity, zero boilerplate needed</td></tr>
+          <tr><td><code>script</code></td><td>External <code>.groovy</code> file</td><td>Large logic, reusable across services</td></tr>
+          <tr><td><code>java</code></td><td>Compiled Java class method</td><td>Performance-critical code, existing Java libraries</td></tr>
+          <tr><td><code>remote-json-rpc</code></td><td>External JSON-RPC server</td><td>Call another Moqui instance or JSON-RPC API</td></tr>
+          <tr><td><code>remote-rest</code></td><td>External REST HTTP endpoint</td><td>Call any REST API (Stripe, Twilio, custom APIs)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>entity-auto — Zero Code CRUD</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Call</th><th>What It Does</th><th>SQL Generated</th></tr></thead>
+        <tbody>
+          <tr><td><code>ec.service.sync().name("create#party.Party").call()</code></td><td>Creates a Party record</td><td><code>INSERT INTO PARTY (...)</code></td></tr>
+          <tr><td><code>ec.service.sync().name("update#party.Party").call()</code></td><td>Updates a Party record</td><td><code>UPDATE PARTY SET ...</code></td></tr>
+          <tr><td><code>ec.service.sync().name("delete#party.Party").call()</code></td><td>Deletes a Party record</td><td><code>DELETE FROM PARTY WHERE ...</code></td></tr>
+          <tr><td><code>ec.service.sync().name("store#party.Party").call()</code></td><td>Create or Update (upsert)</td><td>INSERT or UPDATE depending on PK</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Calling Services — 3 Modes</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Mode</th><th>Code</th><th>When to Use</th></tr></thead>
+        <tbody>
+          <tr><td>Synchronous</td><td><code>ec.service.sync().name("create#Person").parameters([...]).call()</code></td><td>Most cases — wait for result</td></tr>
+          <tr><td>Asynchronous</td><td><code>ec.service.async().name("send#Email").parameters([...]).call()</code></td><td>Background tasks — fire and forget</td></tr>
+          <tr><td>Async Distributed</td><td><code>ec.service.async().name("process#Report").distribute(true).call()</code></td><td>Cluster deployments — run on another server</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>SECA Rules — Auto-Trigger Services</h3>
+    <pre><span class="comment">&lt;!-- In a seca.xml file --&gt;</span>
+<span class="tag">&lt;seca</span> <span class="attr">service</span>=<span class="value">"create#party.Person"</span> <span class="attr">when</span>=<span class="value">"post"</span><span class="tag">&gt;</span>
+  <span class="tag">&lt;action</span> <span class="attr">service</span>=<span class="value">"send#WelcomeEmail"</span><span class="tag">&gt;</span>
+    <span class="tag">&lt;field-map</span> <span class="attr">field-name</span>=<span class="value">"toEmail"</span> <span class="attr">from</span>=<span class="value">"email"</span><span class="tag">/&gt;</span>
+  <span class="tag">&lt;/action&gt;</span>
+<span class="tag">&lt;/seca&gt;</span></pre>
+  </section>
+
+  <!-- ── CH 16 ─────────────────────────────────────────────── -->
+  <section class="chapter" id="ch16">
+    <div class="chapter-number">Chapter 16</div>
+    <h2>Screen Layer — UI Definition</h2>
+    <p>Screens are Moqui's UI layer. You define the entire user interface in XML — forms, lists, dialogs, navigation — and Moqui renders it as HTML.</p>
+
+    <h3>Screen XML Key Tags</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Tag</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><code>&lt;screen&gt;</code></td><td>Root tag — defines one UI screen</td></tr>
+          <tr><td><code>&lt;transition&gt;</code></td><td>Handles form submissions and button clicks (HTTP POST handler)</td></tr>
+          <tr><td><code>&lt;actions&gt;</code></td><td>Runs before rendering — loads data into context</td></tr>
+          <tr><td><code>&lt;widgets&gt;</code></td><td>Defines the visual UI components</td></tr>
+          <tr><td><code>&lt;form-single&gt;</code></td><td>Form for creating or editing one record</td></tr>
+          <tr><td><code>&lt;form-list&gt;</code></td><td>Displays a list of records in a table</td></tr>
+          <tr><td><code>&lt;container-dialog&gt;</code></td><td>Creates a button that opens a modal dialog</td></tr>
+          <tr><td><code>&lt;auto-fields-entity&gt;</code></td><td>Auto-generates form fields from entity definition</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Action Tags — Logic in XML</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Action Tag</th><th>Groovy/SQL Equivalent</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td><code>&lt;entity-find&gt;</code></td><td>SQL SELECT / <code>ec.entity.find()</code></td><td><code>&lt;entity-find entity-name="party.Party" list="partyList"&gt;</code></td></tr>
+          <tr><td><code>&lt;entity-find-one&gt;</code></td><td>SQL SELECT + <code>.one()</code></td><td><code>&lt;entity-find-one entity-name="party.Party" value-field="party"&gt;</code></td></tr>
+          <tr><td><code>&lt;service-call&gt;</code></td><td><code>ec.service.sync().name()</code></td><td><code>&lt;service-call name="create#party.Party" out-map="result"/&gt;</code></td></tr>
+          <tr><td><code>&lt;set&gt;</code></td><td>Variable assignment</td><td><code>&lt;set field="statusId" value="ACTIVE"/&gt;</code></td></tr>
+          <tr><td><code>&lt;if&gt;</code></td><td>if/else statement</td><td><code>&lt;if condition="party != null"&gt;...&lt;/if&gt;</code></td></tr>
+          <tr><td><code>&lt;script&gt;</code></td><td>Inline Groovy code</td><td><code>&lt;script&gt;ec.logger.info("Running")&lt;/script&gt;</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── CH 17 ─────────────────────────────────────────────── -->
+  <section class="chapter" id="ch17">
+    <div class="chapter-number">Chapter 17</div>
+    <h2>Screen XML — PartyScreen.xml Walkthrough</h2>
+    <p>A complete, line-by-line walkthrough of a real Moqui screen that displays a list of Party records and lets you create new ones.</p>
+
+    <h3>Screen Root — Authentication</h3>
+    <pre><span class="tag">&lt;screen</span> <span class="attr">xmlns:xsi</span>=<span class="value">"http://www.w3.org/2001/XMLSchema-instance"</span>
+  <span class="attr">xsi:noNamespaceSchemaLocation</span>=<span class="value">"http://moqui.org/xsd/xml-screen-2.1.xsd"</span>
+  <span class="attr">require-authentication</span>=<span class="value">"anonymous-all"</span><span class="tag">&gt;</span></pre>
+
+    <h3>Transition — Handling Form Submission</h3>
+    <pre><span class="tag">&lt;transition</span> <span class="attr">name</span>=<span class="value">"createParty"</span><span class="tag">&gt;</span>
+  <span class="tag">&lt;service-call</span> <span class="attr">name</span>=<span class="value">"create#party.Party"</span><span class="tag">/&gt;</span>
+  <span class="tag">&lt;default-response</span> <span class="attr">url</span>=<span class="value">"."</span><span class="tag">/&gt;</span>
+<span class="tag">&lt;/transition&gt;</span></pre>
+
+    <h3>Actions — Loading Data Before Render</h3>
+    <pre><span class="tag">&lt;actions&gt;</span>
+  <span class="tag">&lt;entity-find</span> <span class="attr">entity-name</span>=<span class="value">"party.Party"</span> <span class="attr">list</span>=<span class="value">"partyList"</span><span class="tag">&gt;</span>
+    <span class="tag">&lt;search-form-inputs/&gt;</span>
+  <span class="tag">&lt;/entity-find&gt;</span>
+<span class="tag">&lt;/actions&gt;</span></pre>
+
+    <h3>Widgets — The UI</h3>
+    <pre><span class="tag">&lt;widgets&gt;</span>
+  <span class="tag">&lt;container-dialog</span> <span class="attr">id</span>=<span class="value">"CreatePartyDialog"</span> <span class="attr">button-text</span>=<span class="value">"Create Party"</span><span class="tag">&gt;</span>
+    <span class="tag">&lt;form-single</span> <span class="attr">name</span>=<span class="value">"CreateParty"</span> <span class="attr">transition</span>=<span class="value">"createParty"</span><span class="tag">&gt;</span>
+      <span class="tag">&lt;auto-fields-entity</span> <span class="attr">entity-name</span>=<span class="value">"party.Party"</span> <span class="attr">field-type</span>=<span class="value">"edit"</span><span class="tag">/&gt;</span>
+      <span class="tag">&lt;field</span> <span class="attr">name</span>=<span class="value">"submitButton"</span><span class="tag">&gt;</span>
+        <span class="tag">&lt;default-field</span> <span class="attr">title</span>=<span class="value">"Create"</span><span class="tag">&gt;&lt;submit/&gt;&lt;/default-field&gt;</span>
+      <span class="tag">&lt;/field&gt;</span>
+    <span class="tag">&lt;/form-single&gt;</span>
+  <span class="tag">&lt;/container-dialog&gt;</span>
+
+  <span class="tag">&lt;form-list</span> <span class="attr">name</span>=<span class="value">"ListParty"</span> <span class="attr">list</span>=<span class="value">"partyList"</span> <span class="attr">skip-form</span>=<span class="value">"true"</span><span class="tag">&gt;</span>
+    <span class="tag">&lt;auto-fields-entity</span> <span class="attr">entity-name</span>=<span class="value">"party.Party"</span> <span class="attr">field-type</span>=<span class="value">"find-display"</span><span class="tag">/&gt;</span>
+  <span class="tag">&lt;/form-list&gt;</span>
+</span class="tag">&lt;/widgets&gt;</span></pre>
+
+    <h3>End-to-End Flow: User Creates a Party</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>What Happens</th><th>Moqui Component</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>User opens <code>/apps/myapp/PartyScreen</code></td><td>ScreenFacadeImpl resolves URL</td></tr>
+          <tr><td>2</td><td>Actions run: entity-find loads partyList from DB</td><td>EntityFacade → JDBC → DB</td></tr>
+          <tr><td>3</td><td>form-list renders partyList as HTML table</td><td>FreeMarker template → HTML</td></tr>
+          <tr><td>4</td><td>User clicks 'Create Party' button</td><td>container-dialog opens modal</td></tr>
+          <tr><td>5</td><td>User fills form and clicks Create</td><td>Browser POSTs form data</td></tr>
+          <tr><td>6</td><td>Transition 'createParty' receives POST</td><td>ScreenDefinition.TransitionItem</td></tr>
+          <tr><td>7</td><td><code>create#party.Party</code> entity-auto service runs</td><td>EntityAutoServiceRunner → INSERT</td></tr>
+          <tr><td>8</td><td>default-response url="." → reload screen</td><td>ScreenRenderImpl re-renders</td></tr>
+          <tr><td>9</td><td>Updated list shown (new record visible)</td><td>entity-find reruns, FTL rerenders</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── CH 18 ─────────────────────────────────────────────── -->
+  <section class="chapter" id="ch18">
+    <div class="chapter-number">Chapter 18</div>
+    <h2>Creating Forms &amp; Services — Hands-On</h2>
+
+    <h3>PersonServices.xml — The Contract</h3>
+    <pre><span class="tag">&lt;service</span> <span class="attr">verb</span>=<span class="value">"create"</span> <span class="attr">noun</span>=<span class="value">"Person"</span> <span class="attr">type</span>=<span class="value">"script"</span>
+  <span class="attr">location</span>=<span class="value">"component://party/service/party/createPerson.groovy"</span><span class="tag">&gt;</span>
+  <span class="tag">&lt;in-parameters&gt;</span>
+    <span class="tag">&lt;parameter</span> <span class="attr">name</span>=<span class="value">"partyId"</span> <span class="attr">type</span>=<span class="value">"String"</span> <span class="attr">required</span>=<span class="value">"true"</span><span class="tag">/&gt;</span>
+    <span class="tag">&lt;parameter</span> <span class="attr">name</span>=<span class="value">"firstName"</span> <span class="attr">type</span>=<span class="value">"String"</span> <span class="attr">required</span>=<span class="value">"true"</span><span class="tag">/&gt;</span>
+    <span class="tag">&lt;parameter</span> <span class="attr">name</span>=<span class="value">"lastName"</span> <span class="attr">type</span>=<span class="value">"String"</span> <span class="attr">required</span>=<span class="value">"true"</span><span class="tag">/&gt;</span>
+    <span class="tag">&lt;auto-parameters</span> <span class="attr">entity-name</span>=<span class="value">"party.Person"</span> <span class="attr">include</span>=<span class="value">"all"</span><span class="tag">/&gt;</span>
+  <span class="tag">&lt;/in-parameters&gt;</span>
+  <span class="tag">&lt;out-parameters&gt;</span>
+    <span class="tag">&lt;parameter</span> <span class="attr">name</span>=<span class="value">"responseMessage"</span> <span class="attr">type</span>=<span class="value">"String"</span><span class="tag">/&gt;</span>
+  <span class="tag">&lt;/out-parameters&gt;</span>
+<span class="tag">&lt;/service&gt;</span></pre>
+
+    <h3>createPerson.groovy — The Logic</h3>
+    <pre><span class="comment">// All in-parameters are auto-injected into context</span>
+<span class="keyword">def</span> partyId = parameters.partyId
+<span class="keyword">def</span> firstName = parameters.firstName
+<span class="keyword">def</span> lastName = parameters.lastName
+
+// Check if Party exists
+<span class="keyword">def</span> party = ec.entity.find(<span class="string">"party.Party"</span>)
+    .condition(<span class="string">"partyId"</span>, partyId).one()
+<span class="keyword">if</span> (!party) {
+    context.responseMessage = <span class="string">"Party ${partyId} does not exist"</span>
+    <span class="keyword">return</span>
+}
+
+// Create the Person record
+ec.entity.makeValue(<span class="string">"party.Person"</span>)
+    .setAll(parameters)
+    .create()
+
+context.responseMessage = <span class="string">"Person ${firstName} ${lastName} created successfully"</span></pre>
+  </section>
+
+  <!-- ── CH 19 ─────────────────────────────────────────────── -->
+  <section class="chapter" id="ch19">
+    <div class="chapter-number">Chapter 19</div>
+    <h2>XML Processing Pipeline — What Becomes What?</h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>File Type</th><th>Compiled?</th><th>When Processed</th><th>Result Cached?</th></tr></thead>
+        <tbody>
+          <tr><td>Entity <code>*.xml</code></td><td>No (→ MNode → EntityDefinition)</td><td>Startup</td><td>Yes (permanent)</td></tr>
+          <tr><td>Service <code>*.xml</code></td><td>Partially (MNode → SD; &lt;actions&gt; → Groovy Class)</td><td>First call (lazy)</td><td>Yes</td></tr>
+          <tr><td>Screen <code>*.xml</code></td><td>Partially (MNode → ScreenDef; &lt;actions&gt; → Groovy Class)</td><td>First request (lazy)</td><td>Yes, with mod-check</td></tr>
+          <tr><td>Standalone <code>*.groovy</code></td><td>Yes (→ in-memory JVM Class)</td><td>First call (lazy)</td><td>Yes</td></tr>
+          <tr><td>Inline Groovy in XML</td><td>Yes (entire &lt;actions&gt; → one Class)</td><td>First call (lazy)</td><td>Yes</td></tr>
+          <tr><td><code>*.java</code> (framework)</td><td>Yes (ahead of time, by Gradle)</td><td>Build time</td><td>Permanent (in JAR)</td></tr>
+          <tr><td><code>*.ftl</code> template</td><td>Parsed (→ FTL Template object)</td><td>First use</td><td>Yes</td></tr>
+          <tr><td>SECA <code>*.secas.xml</code></td><td>No (→ ServiceEcaRule objects)</td><td>Startup</td><td>Yes (in-memory Map)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>ClassLoader Chain</h3>
+    <div class="flow">
+      <div class="flow-step"><div class="flow-step-label">Bootstrap ClassLoader</div><div class="flow-step-desc">JDK built-ins</div></div>
+      <div class="flow-arrow" style="padding:4px 0 4px 16px;">└──</div>
+      <div class="flow-step"><div class="flow-step-label" style="margin-left:16px">System ClassLoader</div></div>
+      <div class="flow-arrow" style="padding:4px 0 4px 32px;">└──</div>
+      <div class="flow-step"><div class="flow-step-label" style="margin-left:32px">MClassLoader</div><div class="flow-step-desc">Loads JARs from runtime/lib, component/lib</div></div>
+      <div class="flow-arrow" style="padding:4px 0 4px 48px;">└──</div>
+      <div class="flow-step"><div class="flow-step-label" style="margin-left:48px">GroovyClassLoader</div><div class="flow-step-desc">Extends MClassLoader — Compiles .groovy dynamically at runtime</div></div>
+    </div>
+  </section>
+
+  <!-- ── CH 20 ─────────────────────────────────────────────── -->
+  <section class="chapter" id="ch20">
+    <div class="chapter-number">Chapter 20</div>
+    <h2>Groovy in Moqui</h2>
+
+    <h3>The Three Groovy Tools — Which Does Moqui Use?</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Tool</th><th>Analogy</th><th>Does Moqui Use It?</th></tr></thead>
+        <tbody>
+          <tr><td><code>GroovyShell</code></td><td>Calculator — type expression, get answer</td><td>Rarely (one-off expressions only)</td></tr>
+          <tr><td><code>GroovyScriptEngine</code></td><td>Script file watcher — re-compiles on file change</td><td>❌ Not used by Moqui</td></tr>
+          <tr><td><code>GroovyClassLoader</code></td><td>Java class loader that also compiles Groovy</td><td>✅ YES — Moqui's ONLY compilation tool</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Available Variables in Groovy Scripts</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Variable</th><th>Type</th><th>What It Is</th></tr></thead>
+        <tbody>
+          <tr><td><code>ec</code></td><td><code>ExecutionContext</code></td><td>The main context object — access to everything</td></tr>
+          <tr><td><code>parameters</code></td><td><code>Map&lt;String, Object&gt;</code></td><td>Input parameters passed to this service</td></tr>
+          <tr><td><code>context</code></td><td><code>ContextStack</code> (Map-like)</td><td>The shared context — set values here to return as out-parameters</td></tr>
+          <tr><td><code>ec.entity</code></td><td><code>EntityFacade</code></td><td>Database operations</td></tr>
+          <tr><td><code>ec.service</code></td><td><code>ServiceFacade</code></td><td>Call other services</td></tr>
+          <tr><td><code>ec.logger</code></td><td><code>LoggerFacade</code></td><td>Logging: <code>ec.logger.info()</code>, <code>ec.logger.warn()</code></td></tr>
+          <tr><td><code>ec.message</code></td><td><code>MessageFacade</code></td><td>Add error/info messages: <code>ec.message.addError()</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout note">
+      <span class="callout-icon">📝</span>
+      <span class="callout-text">The Class is <strong>NEVER</strong> re-created per request. Only a lightweight Script wrapper is new each time. After the first call, Groovy service performance ≈ Java performance.</span>
+    </div>
+  </section>
+
+  <!-- ── CH 21 ─────────────────────────────────────────────── -->
+  <section class="chapter" id="ch21">
+    <div class="chapter-number">Chapter 21</div>
+    <h2>Definition vs Facade vs EC — The Mental Model</h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Concept</th><th>Analogy</th><th>Lifetime</th><th>Shared?</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td>Definition (EntityDef, ServiceDef, ScreenDef)</td><td>Recipe card — written once, read-only</td><td>Permanent (until server restart)</td><td>Yes — all threads read the same</td><td>Describes WHAT something is</td></tr>
+          <tr><td>Facade (EntityFacade, ServiceFacade, etc.)</td><td>Kitchen department head — knows where everything is</td><td>Permanent (created at boot)</td><td>Yes — one per server, thread-safe</td><td>Provides clean API to a complex subsystem</td></tr>
+          <tr><td>ExecutionContext (ec)</td><td>Waiter assigned to one table — lives for one customer's visit</td><td>Per-request (created &amp; destroyed each time)</td><td>No — each request gets its own EC</td><td>Carries state for ONE request</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>One-Liner Summaries</h3>
+    <div class="cheat-grid">
+      <div class="cheat-row"><div class="cheat-q">Definition</div><div class="cheat-a">What an entity/service/screen IS — static blueprint, cached forever, never changes at runtime.</div></div>
+      <div class="cheat-row"><div class="cheat-q">Facade</div><div class="cheat-a">How you INTERACT with a subsystem — shared coordinator, always available, thread-safe.</div></div>
+      <div class="cheat-row"><div class="cheat-q">ExecutionContext (ec)</div><div class="cheat-a">WHO is making the request and WHAT is happening NOW — carries state for one specific request.</div></div>
+    </div>
+  </section>
+
+  <!-- ── CH 22 ─────────────────────────────────────────────── -->
+  <section class="chapter" id="ch22">
+    <div class="chapter-number">Chapter 22</div>
+    <h2>Key Design Patterns in Moqui</h2>
+
+    <div class="pattern-grid">
+      <div class="pattern-card">
+        <div class="pc-name">Facade Pattern</div>
+        <div class="pc-where">EntityFacade, ServiceFacade, ScreenFacade</div>
+        <div class="pc-desc">Hides complexity behind a simple API. You call 1 line, 50 lines run internally.</div>
+      </div>
+      <div class="pattern-card">
+        <div class="pc-name">Strategy Pattern</div>
+        <div class="pc-where">ServiceRunner (Inline/Java/Script/EntityAuto)</div>
+        <div class="pc-desc">Each service type is a different strategy for executing logic. Switchable without changing calling code.</div>
+      </div>
+      <div class="pattern-card">
+        <div class="pc-name">Singleton Pattern</div>
+        <div class="pc-where">ECFI, all Facades</div>
+        <div class="pc-desc">One instance per server. Shared globally. Thread-safe.</div>
+      </div>
+      <div class="pattern-card">
+        <div class="pc-name">Factory Pattern</div>
+        <div class="pc-where">ECFI.getEci()</div>
+        <div class="pc-desc">Creates new ExecutionContext instances for each request.</div>
+      </div>
+      <div class="pattern-card">
+        <div class="pc-name">Subtype Pattern</div>
+        <div class="pc-where">Party → Person / PartyGroup</div>
+        <div class="pc-desc">Shared base record (Party), type-specific child record (Person). Shared PK links them.</div>
+      </div>
+      <div class="pattern-card">
+        <div class="pc-name">Enumeration Pattern</div>
+        <div class="pc-where">partyTypeEnumId, statusId, contactMechTypeId</div>
+        <div class="pc-desc">Types are data rows, not hardcoded columns. Add new types without schema changes.</div>
+      </div>
+      <div class="pattern-card">
+        <div class="pc-name">Valid-Time Modeling</div>
+        <div class="pc-where">PartyContactMech (fromDate, thruDate)</div>
+        <div class="pc-desc">Historical data preserved with date ranges. No records ever deleted — just expired.</div>
+      </div>
+      <div class="pattern-card">
+        <div class="pc-name">Declarative Programming</div>
+        <div class="pc-where">All XML definitions</div>
+        <div class="pc-desc">You say WHAT, Moqui figures out HOW. Zero SQL, zero JDBC, zero HTML for basic operations.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── CH 23 ─────────────────────────────────────────────── -->
+  <section class="chapter" id="ch23">
+    <div class="chapter-number">Chapter 23</div>
+    <h2>Common Mistakes &amp; Debugging</h2>
+
+    <h3>Entity Mistakes</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Mistake</th><th>Symptom</th><th>Fix</th></tr></thead>
+        <tbody>
+          <tr><td>Wrong entity name in code</td><td><code>EntityException: Entity not found "party.Pary"</code></td><td>Check spelling + package. Use exact case.</td></tr>
+          <tr><td>Not running <code>./gradlew load</code> after adding entity</td><td>Table doesn't exist — SQL error on first query</td><td>Always run <code>./gradlew load</code> after adding/modifying entity XML.</td></tr>
+          <tr><td>Using float for currency</td><td>Price shows as 99.99999... instead of 100.00</td><td>Use <code>currency-amount</code> type, not <code>number-float</code>.</td></tr>
+          <tr><td>Missing relationship key-map</td><td>Join produces no results or wrong join condition</td><td>Ensure <code>&lt;key-map field-name="x" related="y"/&gt;</code> is present.</td></tr>
+          <tr><td>Caching transactional data</td><td>Stale data shown after update</td><td>Never use <code>cache="true"</code> on transactional entities (orders, payments).</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Service Mistakes</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Mistake</th><th>Symptom</th><th>Fix</th></tr></thead>
+        <tbody>
+          <tr><td>Wrong service name format</td><td><code>ServiceException: Service not found "PersonService.create"</code></td><td>Use verb#noun format: <code>"create#Person"</code></td></tr>
+          <tr><td>Missing required parameter</td><td>Validation error at framework level</td><td>Pass all <code>required="true"</code> parameters in your call.</td></tr>
+          <tr><td>allow-remote not set for REST</td><td>404 or access denied from REST API</td><td>Add <code>allow-remote="true"</code> to the service definition.</td></tr>
+          <tr><td>Wrong Groovy context variable name</td><td>Null value returned for out-parameter</td><td>In Groovy, set <code>context.myOutput = value</code>, not <code>parameters.myOutput</code>.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── CH 24 ─────────────────────────────────────────────── -->
+  <section class="chapter" id="ch24">
+    <div class="chapter-number">Chapter 24</div>
+    <h2>Interview Cheatsheet</h2>
+
+    <h3>Adarsh's Core Architecture Questions</h3>
+    <div class="cheat-grid">
+      <div class="cheat-row">
+        <div class="cheat-q">What is Moqui?</div>
+        <div class="cheat-a">An open-source Java enterprise framework. Everything is defined in XML. Uses convention over configuration. Built on Java + Groovy + JDBC.</div>
+      </div>
+      <div class="cheat-row">
+        <div class="cheat-q">What is ExecutionContext?</div>
+        <div class="cheat-a">The central per-request object. Provides access to all facades (entity, service, screen). Created fresh for each HTTP request and destroyed after.</div>
+      </div>
+      <div class="cheat-row">
+        <div class="cheat-q">What is a Facade?</div>
+        <div class="cheat-a">A simplified API hiding complex internal logic. EntityFacade hides all JDBC/SQL. ServiceFacade hides service discovery and transactions. Created once at boot, shared across all requests.</div>
+      </div>
+      <div class="cheat-row">
+        <div class="cheat-q">Does Moqui use JDBC?</div>
+        <div class="cheat-a">Yes, internally through the Entity Engine. Developers never write raw JDBC — EntityFacade generates all SQL and manages connections via HikariCP pool.</div>
+      </div>
+      <div class="cheat-row">
+        <div class="cheat-q">What is the Entity Engine?</div>
+        <div class="cheat-a">Moqui's ORM. Converts entity XML definitions into EntityDefinition objects, generates SQL tables via <code>./gradlew load</code>, and handles all CRUD operations at runtime.</div>
+      </div>
+      <div class="cheat-row">
+        <div class="cheat-q">What is a view-entity?</div>
+        <div class="cheat-a">The XML equivalent of a SQL VIEW. Defines joins between entities, selects specific fields, applies conditions — all in XML without writing SQL.</div>
+      </div>
+      <div class="cheat-row">
+        <div class="cheat-q">What is entity-auto service?</div>
+        <div class="cheat-a">Adarsh's Auto-generated CRUD services. Call <code>create#party.Party</code> without writing any service code — Moqui generates the INSERT logic automatically.</div>
+      </div>
+      <div class="cheat-row">
+        <div class="cheat-q">What is SECA?</div>
+        <div class="cheat-a">Service Event Condition Action — trigger one service automatically when another runs. Like database triggers, but at the service level.</div>
+      </div>
+    </div>
+
+    <h3>One-Line Definitions (Quick Reference)</h3>
+    <div class="cheat-grid">
+      <div class="cheat-row"><div class="cheat-q">MNode</div><div class="cheat-a">Moqui's own fast in-memory XML node class (not standard Java DOM). All XML lives as MNode after parsing.</div></div>
+      <div class="cheat-row"><div class="cheat-q">XmlAction</div><div class="cheat-a">Converts XML action tags (<code>&lt;entity-find&gt;</code>, <code>&lt;set&gt;</code>, <code>&lt;if&gt;</code>) into Groovy bytecode. The bridge between XML and execution.</div></div>
+      <div class="cheat-row"><div class="cheat-q">ContextStack</div><div class="cheat-a">A stack of Maps that holds all in-scope variables for a request. Reading goes top-to-bottom. Writing always goes to the top.</div></div>
+      <div class="cheat-row"><div class="cheat-q">HikariCP</div><div class="cheat-a">Connection pool used by Moqui. Pre-creates DB connections and reuses them. Faster than creating new connection per query.</div></div>
+      <div class="cheat-row"><div class="cheat-q">Bitronix / JTA</div><div class="cheat-a">Transaction manager. Ensures ACID compliance. Automatically wraps each service call in a transaction with rollback on error.</div></div>
+      <div class="cheat-row"><div class="cheat-q">sequence-bank-size</div><div class="cheat-a">Pre-fetches N primary key IDs from DB to avoid a DB hit on every single insert. Default: 50.</div></div>
+      <div class="cheat-row"><div class="cheat-q">optimistic-lock</div><div class="cheat-a">Prevents overwrites: checks <code>lastUpdatedStamp</code> before save. If record changed since you read it, throws error.</div></div>
+      <div class="cheat-row"><div class="cheat-q">Party Model</div><div class="cheat-a">Enterprise data model where Person and Organization both extend an abstract Party. Enables one entity (ACME Corp) to be both customer and supplier.</div></div>
+    </div>
+  </section>
+
+  </div><!-- /content -->
+</main>
+
+<script>
+  // Active sidebar link on scroll
+  const sections = document.querySelectorAll('.chapter');
+  const navLinks = document.querySelectorAll('.sidebar a');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        navLinks.forEach(link => {
+          link.classList.toggle('active', link.getAttribute('href') === `#${id}`);
+        });
+      }
+    });
+  }, { rootMargin: '-20% 0px -60% 0px' });
+
+  sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

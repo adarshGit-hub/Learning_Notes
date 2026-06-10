@@ -16,14 +16,27 @@ const EXCLUDE_DIRS = new Set([
   '_site', 'node_modules', '.git', '.github', 'templates', 'artifacts', 'scratch'
 ]);
 
+// Helper to generate consistent slug IDs from headings
+function slugify(text) {
+  // Unescape HTML entities (e.g. &amp; -> &) in case marked pre-escapes them
+  const unescaped = text
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'");
+
+  return unescaped.toLowerCase()
+    .replace(/[^\w\s-]/g, '') // remove special characters except spaces, hyphens, alphanumeric
+    .trim()
+    .replace(/\s/g, '-');     // replace spaces with hyphens (preserves double spaces as double hyphens, matching GitHub behavior)
+}
+
 // Initialize Marked with a custom heading renderer to inject IDs for Table of Contents / ScrollSpy
 const renderer = new marked.Renderer();
 renderer.heading = function(text, depth, raw) {
-  const id = text.toLowerCase()
-    .replace(/[^\w\s-]/g, '') // remove special chars
-    .replace(/\s+/g, '-')     // replace spaces with hyphens
-    .replace(/-+/g, '-');     // collapse repeat hyphens
-  
+  const id = slugify(text);
   return `<h${depth} id="${id}">${text}</h${depth}>`;
 };
 
@@ -221,10 +234,7 @@ function generateToC(markdownText) {
   while ((match = headingRegex.exec(markdownText)) !== null) {
     const depth = match[1] === '##' ? 2 : 3;
     const text = match[2].trim().replace(/\[(.*?)\]\(.*?\)/g, '$1'); // Strip markdown links in headings
-    const id = text.toLowerCase()
-      .replace(/[^\w\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-');
+    const id = slugify(text);
 
     tocHtml += `<li class="toc-item depth-${depth}"><a href="#${id}" class="toc-link">${text}</a></li>\n`;
   }
