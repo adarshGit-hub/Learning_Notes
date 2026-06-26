@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SQL in production — the journey of a query</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0B0F17;
+    --ink-2:#11171F;
+    --ink-3:#161D27;
+    --line:rgba(232,227,216,0.10);
+    --line-2:rgba(232,227,216,0.16);
+    --paper:#E8E3D8;
+    --paper-dim:#A6A096;
+    --paper-dimmer:#6F6B62;
+    --amber:#E8A33D;
+    --amber-dim:#7A5A26;
+    --cyan:#5FB8C9;
+    --cyan-dim:#2E5A62;
+    --red:#D9614F;
+    --red-dim:#6B3429;
+    --green:#7FB069;
+    --mono:'JetBrains Mono', monospace;
+    --sans:'Inter', sans-serif;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--ink);
+    color:var(--paper);
+    font-family:var(--sans);
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  ::selection{background:var(--amber); color:var(--ink);}
+  a{color:var(--cyan); text-decoration:none; border-bottom:1px solid var(--cyan-dim);}
+  a:hover{border-bottom-color:var(--cyan);}
+  :focus-visible{outline:2px solid var(--amber); outline-offset:3px;}
+
+  .wrap{max-width:980px; margin:0 auto; padding:0 28px;}
+
+  /* ===== background texture ===== */
+  .grid-bg{
+    position:fixed; inset:0; z-index:0; pointer-events:none;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size:64px 64px;
+    opacity:0.4;
+    mask-image:linear-gradient(to bottom, black 0%, black 30%, transparent 85%);
+  }
+
+  /* ===== top label bar ===== */
+  .topbar{
+    position:relative; z-index:2;
+    border-bottom:1px solid var(--line);
+    padding:18px 0;
+  }
+  .topbar .wrap{display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;}
+  .topbar-label{
+    font-family:var(--mono); font-size:12px; letter-spacing:0.08em; text-transform:uppercase;
+    color:var(--paper-dim);
+  }
+  .topbar-label b{color:var(--cyan); font-weight:600;}
+  .pulse-dot{
+    display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--green);
+    margin-right:8px; box-shadow:0 0 0 0 rgba(127,176,105,0.6);
+    animation:pulse 2s infinite;
+  }
+  @media (prefers-reduced-motion: reduce){ .pulse-dot{animation:none;} }
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(127,176,105,0.5);}
+    70%{box-shadow:0 0 0 6px rgba(127,176,105,0);}
+    100%{box-shadow:0 0 0 0 rgba(127,176,105,0);}
+  }
+
+  /* ===== hero ===== */
+  .hero{position:relative; z-index:2; padding:84px 0 56px;}
+  .hero-eyebrow{
+    font-family:var(--mono); font-size:13px; color:var(--amber);
+    letter-spacing:0.12em; text-transform:uppercase; margin-bottom:22px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .hero-eyebrow::before{content:'>'; color:var(--paper-dimmer);}
+  h1{
+    font-family:var(--mono); font-weight:700;
+    font-size:clamp(34px, 5.6vw, 60px);
+    line-height:1.08;
+    letter-spacing:-0.01em;
+    max-width:880px;
+    color:var(--paper);
+  }
+  h1 .accent{color:var(--cyan);}
+  .hero-sub{
+    margin-top:26px; font-size:18px; color:var(--paper-dim); max-width:640px;
+    font-weight:400;
+  }
+  .hero-meta{
+    margin-top:36px; display:flex; gap:28px; flex-wrap:wrap;
+    font-family:var(--mono); font-size:12.5px; color:var(--paper-dimmer);
+  }
+  .hero-meta span b{color:var(--paper);}
+
+  /* ===== section scaffolding ===== */
+  section{position:relative; z-index:2;}
+  .section-pad{padding:64px 0;}
+  .kicker{
+    font-family:var(--mono); font-size:12.5px; letter-spacing:0.1em; text-transform:uppercase;
+    color:var(--amber); margin-bottom:14px; display:flex; align-items:center; gap:10px;
+  }
+  .kicker::before{content:''; width:18px; height:1px; background:var(--amber-dim);}
+  h2{
+    font-family:var(--mono); font-weight:700; font-size:clamp(26px, 3.4vw, 36px);
+    color:var(--paper); letter-spacing:-0.01em; margin-bottom:18px;
+  }
+  .lead{font-size:17px; color:var(--paper-dim); max-width:680px; margin-bottom:8px;}
+  hr.div{border:none; border-top:1px solid var(--line); margin:0;}
+
+  /* ===== PIPELINE — signature element ===== */
+  .pipeline-section{padding:70px 0 30px;}
+  .pipeline-intro{max-width:680px; margin-bottom:44px;}
+  .pipeline-track-wrap{
+    position:relative;
+  }
+  .pipeline-rail{
+    position:relative;
+    display:grid;
+    grid-template-columns:repeat(5, 1fr);
+    gap:0;
+    border:1px solid var(--line-2);
+    border-radius:4px;
+    overflow:hidden;
+  }
+  .pl-node{
+    position:relative;
+    padding:22px 18px 24px;
+    border-right:1px solid var(--line);
+    cursor:pointer;
+    transition:background 0.25s ease;
+    background:var(--ink-2);
+  }
+  .pl-node:last-child{border-right:none;}
+  .pl-node:hover, .pl-node.active{background:var(--ink-3);}
+  .pl-node-num{
+    font-family:var(--mono); font-size:11px; color:var(--paper-dimmer); margin-bottom:14px;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .pl-node-num .danger-tag{
+    font-size:9.5px; padding:2px 6px; border-radius:3px; letter-spacing:0.05em;
+    background:rgba(217,97,79,0.14); color:var(--red); border:1px solid rgba(217,97,79,0.3);
+  }
+  .pl-node-title{
+    font-family:var(--mono); font-weight:600; font-size:14.5px; color:var(--paper); margin-bottom:8px;
+    line-height:1.3;
+  }
+  .pl-node-desc{font-size:12.5px; color:var(--paper-dimmer); line-height:1.5;}
+  .pl-node::after{
+    content:''; position:absolute; left:0; right:0; bottom:0; height:2px;
+    background:var(--cyan); transform:scaleX(0); transform-origin:left;
+    transition:transform 0.4s ease;
+  }
+  .pl-node.active::after{transform:scaleX(1);}
+  .pl-node.danger::after{background:var(--red);}
+
+  .pl-arrow{
+    position:absolute; top:50%; width:14px; height:14px; z-index:3;
+    transform:translate(-50%,-50%);
+    color:var(--paper-dimmer);
+    pointer-events:none;
+  }
+
+  .pl-detail{
+    margin-top:0;
+    border:1px solid var(--line-2); border-top:none;
+    border-radius:0 0 4px 4px;
+    background:var(--ink-3);
+    padding:28px 30px;
+    display:none;
+  }
+  .pl-detail.show{display:block; animation:fadein 0.3s ease;}
+  @keyframes fadein{from{opacity:0; transform:translateY(-4px);} to{opacity:1; transform:translateY(0);}}
+  .pl-detail-head{
+    display:flex; align-items:baseline; gap:12px; margin-bottom:14px; flex-wrap:wrap;
+  }
+  .pl-detail-head .stage-name{font-family:var(--mono); font-weight:700; font-size:18px; color:var(--cyan);}
+  .pl-detail-body{color:var(--paper-dim); font-size:15px; max-width:680px;}
+  .pl-detail-body p{margin-bottom:10px;}
+  .pl-detail-body code{
+    font-family:var(--mono); font-size:13px; background:rgba(232,227,216,0.07);
+    padding:2px 6px; border-radius:3px; color:var(--paper);
+  }
+  .pl-where-it-bites{
+    margin-top:16px; padding:14px 16px; border-left:2px solid var(--red);
+    background:rgba(217,97,79,0.07); font-size:13.5px; color:var(--paper-dim);
+  }
+  .pl-where-it-bites b{color:var(--red); font-family:var(--mono); font-size:12px; text-transform:uppercase; letter-spacing:0.04em; display:block; margin-bottom:5px;}
+
+  .pipeline-caption{
+    margin-top:16px; font-family:var(--mono); font-size:12px; color:var(--paper-dimmer);
+    text-align:center;
+  }
+
+  @media (max-width:760px){
+    .pipeline-rail{grid-template-columns:1fr; }
+    .pl-node{border-right:none; border-bottom:1px solid var(--line);}
+    .pl-node:last-child{border-bottom:none;}
+  }
+
+  /* ===== two column flow / explanation ===== */
+  .why-block{
+    display:grid; grid-template-columns:200px 1fr; gap:32px;
+    padding:26px 0; border-top:1px solid var(--line);
+  }
+  .why-block:last-child{border-bottom:1px solid var(--line);}
+  .why-label{font-family:var(--mono); font-size:12.5px; color:var(--paper-dimmer); padding-top:3px;}
+  .why-label b{color:var(--cyan); display:block; font-size:13px; margin-bottom:4px;}
+  @media (max-width:680px){ .why-block{grid-template-columns:1fr; gap:10px;} }
+
+  /* ===== rule cards (dos / don'ts) ===== */
+  .rules-grid{display:flex; flex-direction:column; gap:18px; margin-top:36px;}
+  .rule-card{
+    border:1px solid var(--line-2);
+    border-radius:6px;
+    overflow:hidden;
+    background:var(--ink-2);
+  }
+  .rule-head{
+    display:flex; align-items:center; justify-content:space-between; gap:16px;
+    padding:18px 22px;
+    cursor:pointer;
+    user-select:none;
+  }
+  .rule-head:hover{background:var(--ink-3);}
+  .rule-head-left{display:flex; align-items:center; gap:14px; min-width:0;}
+  .rule-status{
+    font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:0.04em;
+    padding:4px 9px; border-radius:3px; flex-shrink:0; text-transform:uppercase;
+  }
+  .rule-status.do{background:rgba(127,176,105,0.14); color:var(--green); border:1px solid rgba(127,176,105,0.3);}
+  .rule-status.dont{background:rgba(217,97,79,0.14); color:var(--red); border:1px solid rgba(217,97,79,0.3);}
+  .rule-title{font-family:var(--mono); font-weight:600; font-size:15.5px; color:var(--paper);}
+  .rule-stage-tag{
+    font-family:var(--mono); font-size:10.5px; color:var(--paper-dimmer);
+    border:1px solid var(--line-2); padding:2px 8px; border-radius:3px;
+    white-space:nowrap; flex-shrink:0;
+  }
+  .rule-chevron{
+    flex-shrink:0; width:18px; height:18px; color:var(--paper-dimmer);
+    transition:transform 0.25s ease;
+  }
+  .rule-card.open .rule-chevron{transform:rotate(180deg);}
+  .rule-body{
+    max-height:0; overflow:hidden; transition:max-height 0.3s ease;
+  }
+  .rule-card.open .rule-body{max-height:600px;}
+  .rule-body-inner{
+    padding:0 22px 22px; border-top:1px solid var(--line);
+    padding-top:18px;
+  }
+  .rule-body p{color:var(--paper-dim); font-size:14.5px; margin-bottom:14px; max-width:680px;}
+  .rule-body code{font-family:var(--mono); font-size:13px; background:rgba(232,227,216,0.07); padding:2px 6px; border-radius:3px;}
+
+  pre.code-block{
+    font-family:var(--mono); font-size:13px; line-height:1.65;
+    background:var(--ink); border:1px solid var(--line-2); border-radius:5px;
+    padding:16px 18px; overflow-x:auto; margin:6px 0 4px;
+    color:var(--paper-dim);
+  }
+  pre.code-block .cm{color:var(--paper-dimmer); font-style:italic;}
+  pre.code-block .kw{color:var(--cyan);}
+  pre.code-block .bad{color:var(--red);}
+  pre.code-block .good{color:var(--green);}
+  pre.code-block .str{color:var(--amber);}
+
+  /* ===== checklist strip ===== */
+  .checklist{
+    margin-top:60px; border:1px solid var(--line-2); border-radius:6px;
+    background:var(--ink-2); padding:30px 32px;
+  }
+  .checklist h3{
+    font-family:var(--mono); font-size:16px; color:var(--paper); margin-bottom:18px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .checklist h3::before{content:'$'; color:var(--amber);}
+  .checklist ul{list-style:none; display:flex; flex-direction:column; gap:11px;}
+  .checklist li{
+    display:flex; align-items:flex-start; gap:12px; font-size:14.5px; color:var(--paper-dim);
+  }
+  .checklist li::before{
+    content:'☐'; font-family:var(--mono); color:var(--cyan); flex-shrink:0; margin-top:1px; font-size:15px;
+  }
+  .checklist li b{color:var(--paper); font-weight:600;}
+
+  /* ===== reference / footer ===== */
+  .reference-box{
+    margin-top:50px; padding:26px 28px; border:1px solid var(--amber-dim); border-radius:6px;
+    background:rgba(232,163,61,0.06);
+  }
+  .reference-box .kicker{color:var(--amber); margin-bottom:10px;}
+  .reference-box p{color:var(--paper-dim); font-size:14.5px; max-width:640px;}
+
+  footer{
+    border-top:1px solid var(--line); padding:36px 0 60px; margin-top:40px;
+  }
+  footer .wrap{display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;}
+  .foot-text{font-family:var(--mono); font-size:12px; color:var(--paper-dimmer);}
+
+  /* scroll progress accent line at very top */
+  .scroll-progress{
+    position:fixed; top:0; left:0; height:2px; background:var(--cyan); z-index:50;
+    width:0%; transition:width 0.1s linear;
+  }
+</style>
+</head>
+<body>
+
+<div class="scroll-progress" id="scrollProgress"></div>
+<div class="grid-bg"></div>
+
+<header class="topbar">
+  <div class="wrap">
+    <div class="topbar-label"><span class="pulse-dot"></span>session: <b>prod</b> — read carefully before EXECUTE</div>
+    <div class="topbar-label">db internals · safety guide</div>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-eyebrow">EXPLAIN ANALYZE your assumptions first</div>
+    <h1>What happens<br>between <span class="accent">SELECT</span> and<br>the rows you get back.</h1>
+    <p class="hero-sub">
+      A query doesn't just "run." It passes through five distinct stages before a single row reaches you —
+      and almost every production incident traces back to one of them. This is the actual flow, followed by
+      the dos and don'ts mapped to the exact stage that causes them.
+    </p>
+    <div class="hero-meta">
+      <span>stages: <b>05</b></span>
+      <span>primary failure points: <b>02</b></span>
+      <span>read time: <b>~9 min</b></span>
+    </div>
+  </div>
+</section>
+
+<hr class="div">
+
+<section class="pipeline-section">
+  <div class="wrap">
+    <div class="kicker">the journey of a query</div>
+    <h2>Five stages, one row at a time</h2>
+    <p class="pipeline-intro lead">
+      Click any stage below to see what it actually does, and — for the two stages marked
+      <span style="color:var(--red); font-family:var(--mono); font-size:13px;">RISK</span> — exactly how it
+      takes prod down when nobody's watching.
+    </p>
+
+    <div class="pipeline-track-wrap">
+      <div class="pipeline-rail" id="pipelineRail">
+        <div class="pl-node" data-stage="0">
+          <div class="pl-node-num">01</div>
+          <div class="pl-node-title">Parser</div>
+          <div class="pl-node-desc">Syntax check, builds parse tree</div>
+        </div>
+        <div class="pl-node" data-stage="1">
+          <div class="pl-node-num">02</div>
+          <div class="pl-node-title">Optimizer</div>
+          <div class="pl-node-desc">Reads stats, picks the execution plan</div>
+        </div>
+        <div class="pl-node" data-stage="2">
+          <div class="pl-node-num">03</div>
+          <div class="pl-node-title">Executor</div>
+          <div class="pl-node-desc">Walks the plan, fetches rows</div>
+        </div>
+        <div class="pl-node danger" data-stage="3">
+          <div class="pl-node-num">04 <span class="danger-tag">risk</span></div>
+          <div class="pl-node-title">Storage engine</div>
+          <div class="pl-node-desc">Buffer pool, disk, locks, redo/undo</div>
+        </div>
+        <div class="pl-node danger" data-stage="4">
+          <div class="pl-node-num">05 <span class="danger-tag">risk</span></div>
+          <div class="pl-node-title">Transaction mgr</div>
+          <div class="pl-node-desc">Commit, rollback, isolation, locking</div>
+        </div>
+      </div>
+
+      <div class="pl-detail" id="plDetail"></div>
+    </div>
+    <p class="pipeline-caption">click a stage above ↑ — stages 04 and 05 are where almost every prod incident actually happens</p>
+  </div>
+</section>
+
+<section class="section-pad">
+  <div class="wrap">
+    <div class="kicker">why the rules exist</div>
+    <h2>Every "don't" maps to a stage above</h2>
+    <p class="lead">None of these are arbitrary house rules. Each one exists because of something specific that happens at steps 4 or 5 of the flow you just walked through.</p>
+
+    <div class="why-block">
+      <div class="why-label"><b>stage 02</b>optimizer</div>
+      <div>
+        <p style="color:var(--paper-dim); font-size:15px;">The optimizer decides whether your query touches 50 rows or 5 million. <code>EXPLAIN</code> shows you its decision before you commit to it on prod. If you see <code>type: ALL</code> on a large table — that's the optimizer telling you, in plain text, that it found no usable index and intends to scan every row.</p>
+      </div>
+    </div>
+    <div class="why-block">
+      <div class="why-label"><b>stage 04</b>storage engine</div>
+      <div>
+        <p style="color:var(--paper-dim); font-size:15px;">This is where row and table locks actually live. A write here doesn't just change data — it holds a lock for as long as the statement runs, and every other transaction wanting that same data queues up behind it.</p>
+      </div>
+    </div>
+    <div class="why-block">
+      <div class="why-label"><b>stage 05</b>transaction mgr</div>
+      <div>
+        <p style="color:var(--paper-dim); font-size:15px;">Commit and rollback happen here, along with isolation-level bookkeeping. A transaction you forgot to close — even a plain <code>SELECT</code> under <code>REPEATABLE READ</code> — keeps an MVCC snapshot pinned open, which can block cleanup processes from reclaiming space.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="div">
+
+<section class="section-pad">
+  <div class="wrap">
+    <div class="kicker">field manual</div>
+    <h2>The dos and don'ts</h2>
+    <p class="lead">Click to expand. Each one names the stage it protects and shows the actual query pattern.</p>
+
+    <div class="rules-grid" id="rulesGrid">
+
+      <div class="rule-card">
+        <div class="rule-head">
+          <div class="rule-head-left">
+            <span class="rule-status do">do</span>
+            <span class="rule-title">Always EXPLAIN before you run on prod</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:14px;">
+            <span class="rule-stage-tag">stage 02 — optimizer</span>
+            <svg class="rule-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+        </div>
+        <div class="rule-body">
+          <div class="rule-body-inner">
+            <p>Run <code>EXPLAIN</code> on every query that touches a table you don't fully trust the size of. If the plan shows <code>type: ALL</code> on something like OFBiz's <code>OrderHeader</code> or <code>ReturnItem</code>, stop — that means a full table scan, which on a large table means scanning and potentially locking millions of rows.</p>
+            <pre class="code-block"><span class="kw">EXPLAIN</span> <span class="kw">SELECT</span> * <span class="kw">FROM</span> ReturnItem <span class="kw">WHERE</span> returnId = <span class="str">'X'</span>;
+<span class="cm">-- look at the "type" column: const/eq_ref/ref = good, ALL = full scan</span></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="rule-card">
+        <div class="rule-head">
+          <div class="rule-head-left">
+            <span class="rule-status dont">don't</span>
+            <span class="rule-title">Run unbounded UPDATE / DELETE</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:14px;">
+            <span class="rule-stage-tag">stage 04 — storage</span>
+            <svg class="rule-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+        </div>
+        <div class="rule-body">
+          <div class="rule-body-inner">
+            <p>A single big write holds row or table locks for its entire duration, queueing every other transaction touching that table behind it. This is the most common cause of "the SQL didn't even error but prod froze."</p>
+            <pre class="code-block"><span class="cm">-- dangerous: locks every matching row at once, possibly the whole table</span>
+<span class="bad"><span class="kw">UPDATE</span> OrderItem <span class="kw">SET</span> statusId = <span class="str">'ITEM_CANCELLED'</span> <span class="kw">WHERE</span> orderId = <span class="str">'X'</span>;</span>
+
+<span class="cm">-- safer: batch it</span>
+<span class="good"><span class="kw">UPDATE</span> OrderItem <span class="kw">SET</span> statusId = <span class="str">'ITEM_CANCELLED'</span>
+<span class="kw">WHERE</span> orderId = <span class="str">'X'</span> <span class="kw">LIMIT</span> 500;</span>
+<span class="cm">-- repeat with monitoring, or loop with a short sleep between batches</span></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="rule-card">
+        <div class="rule-head">
+          <div class="rule-head-left">
+            <span class="rule-status do">do</span>
+            <span class="rule-title">Wrap risky writes in a transaction you can roll back</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:14px;">
+            <span class="rule-stage-tag">stage 05 — txn mgr</span>
+            <svg class="rule-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+        </div>
+        <div class="rule-body">
+          <div class="rule-body-inner">
+            <p>Give yourself an exit. Run the write, sanity-check what actually changed, and only then decide whether to keep it.</p>
+            <pre class="code-block"><span class="kw">START TRANSACTION</span>;
+<span class="kw">UPDATE</span> ...;
+<span class="cm">-- check row count, sanity check results</span>
+<span class="kw">COMMIT</span>; <span class="cm">-- or ROLLBACK if something looks wrong</span></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="rule-card">
+        <div class="rule-head">
+          <div class="rule-head-left">
+            <span class="rule-status dont">don't</span>
+            <span class="rule-title">Leave long-running transactions open on prod</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:14px;">
+            <span class="rule-stage-tag">stage 05 — txn mgr</span>
+            <svg class="rule-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+        </div>
+        <div class="rule-body">
+          <div class="rule-body-inner">
+            <p>An open transaction — even a read-only <code>SELECT</code> under <code>REPEATABLE READ</code> — holds onto an MVCC snapshot. That snapshot can block the engine's internal cleanup processes from reclaiming old row versions. Always commit or roll back promptly; don't leave a session idle mid-transaction while you go check something else.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="rule-card">
+        <div class="rule-head">
+          <div class="rule-head-left">
+            <span class="rule-status do">do</span>
+            <span class="rule-title">Treat missing indexes as the first suspect</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:14px;">
+            <span class="rule-stage-tag">stage 02 — optimizer</span>
+            <svg class="rule-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+        </div>
+        <div class="rule-body">
+          <div class="rule-body-inner">
+            <p>Most "slow query brought down prod" stories trace back to a missing index on a JOIN or WHERE column — not clever-but-wrong SQL syntax. Check the indexes before you start rewriting query logic.</p>
+            <pre class="code-block"><span class="kw">SHOW INDEX FROM</span> tablename;</pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="rule-card">
+        <div class="rule-head">
+          <div class="rule-head-left">
+            <span class="rule-status do">do</span>
+            <span class="rule-title">Run exploratory queries on a read replica</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:14px;">
+            <span class="rule-stage-tag">stage 04 — storage</span>
+            <svg class="rule-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+        </div>
+        <div class="rule-body">
+          <div class="rule-body-inner">
+            <p>If a replica exists, point your SELECT-heavy investigation and reporting queries there. That keeps ad-hoc OFBiz reporting from competing with live order processing for locks and I/O on the primary.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="rule-card">
+        <div class="rule-head">
+          <div class="rule-head-left">
+            <span class="rule-status do">do</span>
+            <span class="rule-title">Always test with SELECT before UPDATE / DELETE</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:14px;">
+            <span class="rule-stage-tag">stage 03 — executor</span>
+            <svg class="rule-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+        </div>
+        <div class="rule-body">
+          <div class="rule-body-inner">
+            <p>Run the read version of your write first. Confirm the exact row count and content it would touch — only convert it to a write once that result looks right.</p>
+            <pre class="code-block"><span class="cm">-- run this first to see exactly what you'd affect</span>
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> ReturnItem <span class="kw">WHERE</span> returnId = <span class="str">'X'</span>;
+<span class="cm">-- then convert to UPDATE only after confirming row count/content</span></pre>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="checklist">
+      <h3>before you hit enter on prod</h3>
+      <ul>
+        <li><b>EXPLAIN</b> the query and confirm there's no full table scan on a large table.</li>
+        <li><b>SELECT</b> first to see exactly what rows a write would touch.</li>
+        <li><b>LIMIT / batch</b> any UPDATE or DELETE that could match more than a few hundred rows.</li>
+        <li><b>Wrap</b> the write in a transaction you can roll back if the sanity check looks wrong.</li>
+        <li><b>Close</b> the transaction immediately after — don't leave it idle.</li>
+        <li><b>Replica</b> for anything exploratory, not the primary.</li>
+      </ul>
+    </div>
+
+    <div class="reference-box">
+      <div class="kicker">further reading</div>
+      <p>For a much deeper dive into database internals — storage engines, indexing strategy, and how production systems actually behave under load — Arpit Bhayani's writing is one of the best ongoing resources on the subject: <a href="https://arpitbhayani.me/" target="_blank" rel="noopener">arpitbhayani.me</a></p>
+    </div>
+
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span class="foot-text">production safety notes — internal reference</span>
+    <span class="foot-text">stage 04 / 05 are where it actually breaks</span>
+  </div>
+</footer>
+
+<script>
+  // Pipeline interaction
+  const stageData = [
+    {
+      name: "Parser",
+      tag: null,
+      body: `<p>The very first thing that happens to your query text. It checks syntax — are the keywords in the right order, are quotes closed, does the grammar make sense at all — and if it passes, builds a <code>parse tree</code>: a structured, internal representation of what you asked for.</p>
+             <p>This stage doesn't know anything about your data yet. It has no idea how many rows are in <code>OrderHeader</code>, whether an index exists, or how long anything will take. It only cares whether what you typed is valid SQL.</p>`,
+      bites:null
+    },
+    {
+      name: "Optimizer",
+      tag: null,
+      body: `<p>This is the stage that actually decides whether your query is fast or a disaster. It looks at table statistics, available indexes, and the shape of your WHERE/JOIN clauses, then picks an <code>execution plan</code> — the specific strategy it'll use to find your rows.</p>
+             <p>Running <code>EXPLAIN</code> shows you this plan before you commit to it. The single most useful column to check is <code>type</code> — values like <code>const</code>, <code>eq_ref</code>, or <code>ref</code> mean the optimizer found an index path; <code>ALL</code> means it found nothing and intends to scan every single row in the table.</p>`,
+      bites:null
+    },
+    {
+      name: "Executor",
+      tag: null,
+      body: `<p>Once the plan is chosen, the executor walks it step by step — opening the table or index the optimizer pointed to, and pulling rows from the storage engine one batch at a time according to that plan.</p>
+             <p>This is also the natural place to test before you commit: a <code>SELECT</code> with the exact same WHERE clause as your intended <code>UPDATE</code> or <code>DELETE</code> shows you precisely what the executor would touch, before you let it touch it for real.</p>`,
+      bites:null
+    },
+    {
+      name: "Storage engine",
+      tag:"risk",
+      body: `<p>This is where data physically lives and where locks are actually held. The storage engine (InnoDB, for MySQL) reads and writes <code>pages</code> from the in-memory buffer pool when it can, falling back to disk when it can't. It also manages row/table locks, transactions, and the redo/undo logs that make crash recovery possible.</p>`,
+      bites:`A single unbounded <code>UPDATE</code> or <code>DELETE</code> holds a lock on every row it touches for the entire duration of the statement. On a table like <code>OrderItem</code>, that can mean thousands of locked rows — and every other transaction that wants to touch any of them simply queues up and waits. This is the single most common cause of "the query didn't error, prod just froze."`
+    },
+    {
+      name: "Transaction manager",
+      tag:"risk",
+      body: `<p>Commit, rollback, isolation levels, and locking semantics all live here. It decides what other transactions are allowed to see while yours is in flight, and it's the layer that finally releases your locks when you commit or roll back.</p>`,
+      bites:`A transaction left open — even a read-only <code>SELECT</code> running under <code>REPEATABLE READ</code> — holds an MVCC snapshot in place. That pinned snapshot can block the engine's internal cleanup from reclaiming old row versions, slowly degrading performance for everyone else until someone notices and kills the session.`
+    }
+  ];
+
+  const nodes = document.querySelectorAll('.pl-node');
+  const detail = document.getElementById('plDetail');
+  let activeStage = null;
+
+  function renderStage(i){
+    const s = stageData[i];
+    const riskTag = s.tag ? `<span style="font-family:'JetBrains Mono',monospace; font-size:10px; padding:3px 8px; border-radius:3px; background:rgba(217,97,79,0.14); color:var(--red); border:1px solid rgba(217,97,79,0.3); text-transform:uppercase; letter-spacing:0.04em;">risk stage</span>` : '';
+    detail.innerHTML = `
+      <div class="pl-detail-head">
+        <span class="stage-name">${String(i+1).padStart(2,'0')} — ${s.name}</span>
+        ${riskTag}
+      </div>
+      <div class="pl-detail-body">${s.body}</div>
+      ${s.bites ? `<div class="pl-where-it-bites"><b>where this bites you in production</b>${s.bites}</div>` : ''}
+    `;
+  }
+
+  nodes.forEach(node => {
+    node.addEventListener('click', () => {
+      const stage = node.getAttribute('data-stage');
+      if(activeStage === stage){
+        // collapse
+        detail.classList.remove('show');
+        node.classList.remove('active');
+        activeStage = null;
+        return;
+      }
+      nodes.forEach(n => n.classList.remove('active'));
+      node.classList.add('active');
+      renderStage(parseInt(stage));
+      detail.classList.add('show');
+      activeStage = stage;
+    });
+  });
+
+  // open first stage by default
+  nodes[0].classList.add('active');
+  renderStage(0);
+  detail.classList.add('show');
+  activeStage = "0";
+
+  // Rule cards accordion
+  document.querySelectorAll('.rule-card').forEach(card => {
+    const head = card.querySelector('.rule-head');
+    head.addEventListener('click', () => {
+      const isOpen = card.classList.contains('open');
+      document.querySelectorAll('.rule-card').forEach(c => c.classList.remove('open'));
+      if(!isOpen) card.classList.add('open');
+    });
+  });
+  // open the first don't by default (the unbounded UPDATE one) as an example
+  document.querySelectorAll('.rule-card')[1].classList.add('open');
+
+  // scroll progress bar
+  const progressBar = document.getElementById('scrollProgress');
+  function updateProgress(){
+    const scrolled = window.scrollY;
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    const pct = max > 0 ? (scrolled / max) * 100 : 0;
+    progressBar.style.width = pct + '%';
+  }
+  window.addEventListener('scroll', updateProgress, {passive:true});
+  updateProgress();
+</script>
+
+</body>
+</html>
